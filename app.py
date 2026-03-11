@@ -30,72 +30,6 @@ The purpose of this model is to demonstrate the effect of modifying the input co
 """
 )
 
-# --------------------------------------------------------------------
-# Cached compute helpers (Streamlit reruns top-to-bottom on interaction)
-# --------------------------------------------------------------------
-
-@st.cache_data(show_spinner=False)
-def compute_frequency_grid(lambda0_val: float, L2_m_val: float, n_points: int, span_fsr: float):
-    c0 = 3e8
-    f0_val = c0 / lambda0_val
-    fsr_hz = c0 / (2 * L2_m_val)
-    span_hz = span_fsr * fsr_hz
-    dnu = np.linspace(-span_hz / 2.0, span_hz / 2.0, int(n_points))
-    f = f0_val + dnu
-    return fsr_hz, dnu, f
-
-
-@st.cache_data(show_spinner=False)
-def compute_T3_vs_detuning(
-    freqs: np.ndarray,
-    dnu_arr: np.ndarray,
-    L1_m: float,
-    L2_m_val: float,
-    R1_val: float,
-    R2_val: float,
-    R3_val: float,
-    dL1_dT_eff_val: float,
-    baseline_bw_val: float,
-    bw_expansion_val: float,
-    delta_T_values_arr: np.ndarray,
-):
-    c0 = 3e8
-    k_vals = 2 * np.pi * freqs / c0
-    x_MHz = dnu_arr * 1e-6
-
-    curves = []
-    for dT in delta_T_values_arr:
-        L1_T = L1_m + dL1_dT_eff_val * float(dT)
-        T3 = T_3_mirror(k_vals, L1_T, L2_m_val, R1_val, R2_val, R3_val)
-        bw_T = baseline_bw_val + bw_expansion_val * float(dT)
-        curves.append((x_MHz, T3, L1_T, bw_T))
-
-    T2 = T_effective_2_mirror(k_vals, L2_m_val, R1_val, R2_val, R3_val)
-    return curves, (x_MHz, T2)
-
-
-@st.cache_data(show_spinner=False)
-def compute_phase_and_group_delay(
-    freqs: np.ndarray,
-    R1_val: float,
-    R2_val: float,
-    R3_val: float,
-    L1_m: float,
-    L2_m_val: float,
-):
-    r_tot, _t_tot = three_surface_response(
-        freqs=freqs,
-        R1=R1_val,
-        R2=R2_val,
-        R3=R3_val,
-        L1=L1_m,
-        L2=L2_m_val,
-    )
-    phase = np.unwrap(np.angle(r_tot))
-    omega = 2 * np.pi * freqs
-    tau_g = np.gradient(phase, omega)
-    return phase, tau_g
-
 
 # --------------------------------------------------------------------
 # Sidebar controls
@@ -103,151 +37,144 @@ def compute_phase_and_group_delay(
 
 st.sidebar.header("Input parameters")
 
-with st.sidebar.form("params", border=False):
-    # Lengths (slider + textbox)
-    st.markdown("**Etalon spacing L₁**")
-    col_L1_slider, col_L1_input = st.columns([2, 1])
-    with col_L1_slider:
-        L1_mm_slider = st.slider(
-            "L₁ [mm] (slider)",
-            min_value=1.0,
-            max_value=50.0,
-            value=6.0,
-            step=0.01,
-            label_visibility="collapsed",
-        )
-    with col_L1_input:
-        L1_mm = st.number_input(
-            "L₁ [mm]",
-            min_value=0.1,
-            max_value=50.0,
-            value=L1_mm_slider,
-            step=0.001,
-        )
-
-    st.markdown("**Long cavity length L₂**")
-    col_L2_slider, col_L2_input = st.columns([2, 1])
-    with col_L2_slider:
-        L2_m_slider = st.slider(
-            "L₂ [m] (slider)",
-            min_value=0.05,
-            max_value=3.0,
-            value=0.15,
-            step=0.01,
-            label_visibility="collapsed",
-        )
-    with col_L2_input:
-        L2_m = st.number_input(
-            "L₂ [m]",
-            min_value=0.01,
-            max_value=3.0,
-            value=L2_m_slider,
-            step=0.001,
-        )
-
-    # Reflectivities
-    st.markdown("**Reflectivities**")
-    R1 = st.number_input(
-        "R₁ (etalon mirror 1)",
-        min_value=0.5,
-        max_value=0.999999,
-        value=0.90,
-        step=1e-4,
-        format="%.6f",
-    )
-    R2 = st.number_input(
-        "R₂ (etalon mirror 2)",
-        min_value=0.5,
-        max_value=0.999999,
-        value=0.90,
-        step=1e-4,
-        format="%.6f",
-    )
-    R3 = st.number_input(
-        "R₃ (end mirror)",
-        min_value=0.9,
-        max_value=0.9999999,
-        value=0.9980,
-        step=1e-5,
-        format="%.7f",
-    )
-
-    # Thermal tuning
-    st.markdown("**Etalon substrate properties**")
-
-    n_etalon = st.number_input(
-        "Etalon refractive index n",
+# Lengths (slider + textbox)
+st.sidebar.markdown("**Etalon spacing L₁**")
+col_L1_slider, col_L1_input = st.sidebar.columns([2, 1])
+with col_L1_slider:
+    L1_mm_slider = st.slider(
+        "L₁ [mm] (slider)",
         min_value=1.0,
-        max_value=4.0,
-        value=1.45,
+        max_value=50.0,
+        value=6.0,
         step=0.01,
+        label_visibility="collapsed",
+    )
+with col_L1_input:
+    L1_mm = st.number_input(
+        "L₁ [mm]",
+        min_value=0.1,
+        max_value=50.0,
+        value=L1_mm_slider,
+        step=0.001,
     )
 
-    alpha = st.number_input(
-        "dL₁/dT (ppm/K) – effective tunability",
-        min_value=0.0,
-        max_value=100.0,
-        value=0.55,
+st.sidebar.markdown("**Long cavity length L₂**")
+col_L2_slider, col_L2_input = st.sidebar.columns([2, 1])
+with col_L2_slider:
+    L2_m_slider = st.slider(
+        "L₂ [m] (slider)",
+        min_value=0.05,
+        max_value=3.0,
+        value=0.15,
         step=0.01,
+        label_visibility="collapsed",
     )
-
-    dn_dT = st.number_input(
-        "Thermo-optic coefficient dn/dT (1/K)",
-        value=1.0e-5,
-        format="%.2e",
-        help="Temperature derivative of the refractive index.",
-    )
-
-    max_delta_T = st.number_input(
-        "Maximum temperature excursion ΔTₘₐₓ [°C]",
-        min_value=0.0,
-        max_value=1000.0,
-        value=10.0,
-        step=0.5,
-    )
-    n_temperatures = st.number_input(
-        "Number of temperature samples",
-        min_value=2,
-        max_value=200,
-        value=10,
-        step=1,
-    )
-
-    # cavity loss parameters
-    st.markdown("---")
-    st.subheader("Cavity loss")
-    eps_loss = st.number_input(
-        "Round-trip cavity loss ε",
-        min_value=0.0,
-        max_value=0.1,
-        value=5e-4,
-        format="%.2e",
-        help="Effective round-trip loss of the cavity (scatter, absorption, etc.).",
-    )
-
-    # Stability / geometry parameters
-    st.markdown("---")
-    st.subheader("Stability model")
-    R_c = st.number_input(
-        "End mirror radius of curvature R_c [m]",
+with col_L2_input:
+    L2_m = st.number_input(
+        "L₂ [m]",
         min_value=0.01,
-        max_value=1e5,
-        value=1.0,
-        step=0.01,
-        format="%.3f",
-        help="Used for simple plano–concave stability estimate.",
-    )
-    use_effective_length = st.checkbox(
-        "Include etalon thickness in effective cavity length",
-        value=True,
-        help="If checked, the effective cavity length is L₂ + n·L₁.",
+        max_value=3.0,
+        value=L2_m_slider,
+        step=0.001,
     )
 
-    apply_params = st.form_submit_button("Apply parameters")
+# Reflectivities (slider + textbox)
+st.sidebar.markdown("**Reflectivities**")
+R1 = st.sidebar.number_input(
+    "R₁ (etalon mirror 1)",
+    min_value=0.5,
+    max_value=0.999999,
+    value=0.90,
+    step=1e-4,
+    format="%.6f",
+)
+R2 = st.sidebar.number_input(
+    "R₂ (etalon mirror 2)",
+    min_value=0.5,
+    max_value=0.999999,
+    value=0.90,
+    step=1e-4,
+    format="%.6f",
+)
+R3 = st.sidebar.number_input(
+    "R₃ (end mirror)",
+    min_value=0.9,
+    max_value=0.9999999,
+    value=0.9980,
+    step=1e-5,
+    format="%.7f",
+)
 
-if not apply_params and "params_applied_once" not in st.session_state:
-    st.session_state["params_applied_once"] = True
-    st.sidebar.info("Adjust values, then click **Apply parameters** to recompute.")
+# Thermal tuning
+st.sidebar.markdown("**Etalon substrate properties**")
+
+n_etalon = st.sidebar.number_input(
+    "Etalon refractive index n",
+    min_value=1.0,
+    max_value=4.0,
+    value=1.45,
+    step=0.01
+)
+
+alpha = st.sidebar.number_input(
+    "dL₁/dT (ppm/K) – effective tunability",
+    min_value=0.0,
+    max_value=100.0,
+    value=0.55,
+    step=0.01,
+)
+
+dn_dT = st.sidebar.number_input(
+    "Thermo-optic coefficient dn/dT (1/K)",
+    value=1.0e-5,
+    format="%.2e",
+    help="Temperature derivative of the refractive index."
+)
+
+max_delta_T = st.sidebar.number_input(
+    "Maximum temperature excursion ΔTₘₐₓ [°C]",
+    min_value=0.0,
+    max_value=1000.0,
+    value=10.0,
+    step=0.5,
+)
+n_temperatures = st.sidebar.number_input(
+    "Number of temperature samples",
+    min_value=2,
+    max_value=200,
+    value=10,
+    step=1,
+)
+
+# cavity loss parameters
+st.sidebar.markdown("---")
+st.sidebar.subheader("Cavity loss")
+eps_loss = st.sidebar.number_input(
+    "Round-trip cavity loss ε",
+    min_value=0.0,
+    max_value=0.1,
+    value=5e-4,
+    format="%.2e",
+    help="Effective round-trip loss of the cavity (scatter, absorption, etc.)."
+)
+
+# Stability / geometry parameters
+st.sidebar.markdown("---")
+st.sidebar.subheader("Stability model")
+R_c = st.sidebar.number_input(
+    "End mirror radius of curvature R_c [m]",
+    min_value=0.01,
+    max_value=1e5,
+    value=1.0,
+    step=0.01,
+    format="%.3f",
+    help="Used for simple plano–concave stability estimate.",
+)
+use_effective_length = st.sidebar.checkbox(
+    "Include etalon thickness in effective cavity length",
+    value=True,
+    help="If checked, the effective cavity length is L₂ + n·L₁.",
+)
 
 
 # --------------------------------------------------------------------
@@ -376,9 +303,12 @@ dL1_dT_geom = alpha * L1
 
 delta_T_values = np.linspace(0.0, max_delta_T, int(n_temperatures))
 
-# Frequency grid: span ~2 FSR around resonance
+# Frequency grid: span ~2 FSR around resonance, recomputed for each L2
+FSR_L2_Hz = c / (2 * L2_m)
+span_Hz = 2.0 * FSR_L2_Hz  # covers ~2 resonances
 N_points = 2001
-FSR_L2_Hz, dnu_arr, freqs = compute_frequency_grid(lambda0, L2_m, N_points, span_fsr=2.0)
+dnu_arr = np.linspace(-span_Hz / 2.0, span_Hz / 2.0, N_points)
+freqs = f0 + dnu_arr
 
 L_eff = L2_m + (use_effective_length * 1.0) * 1.4496 * L1
 g1, g2, g_prod, is_stable = simple_stability(L_eff=L_eff, R_c=R_c)
@@ -403,22 +333,15 @@ with tab_tr:
     # Use Plotly for interactive, zoomable plotting
     fig = go.Figure()
 
-    curves, two_mirror = compute_T3_vs_detuning(
-        freqs=freqs,
-        dnu_arr=dnu_arr,
-        L1_m=L1,
-        L2_m_val=L2_m,
-        R1_val=R1,
-        R2_val=R2,
-        R3_val=R3,
-        dL1_dT_eff_val=dL1_dT_eff,
-        baseline_bw_val=baseline_bw,
-        bw_expansion_val=bw_expansion,
-        delta_T_values_arr=delta_T_values,
-    )
+    # Local k for this detuning range
+    k_vals = 2 * np.pi * freqs / c
+    x_MHz = dnu_arr * 1e-6
 
     # Temperature-tuned curves (using effective dL1/dT from the bandwidth model)
-    for x_MHz, T3, L1_T, bw_T in curves:
+    for dT in delta_T_values:
+        L1_T = L1 + dL1_dT_eff * dT
+        T3 = T_3_mirror(k_vals, L1_T, L2_m, R1, R2, R3)
+        bw_T = baseline_bw + bw_expansion * dT
         fig.add_trace(
             go.Scatter(
                 x=x_MHz,
@@ -429,7 +352,7 @@ with tab_tr:
         )
 
     # Effective two-mirror comparison
-    x_MHz, T2 = two_mirror
+    T2 = T_effective_2_mirror(k_vals, L2_m, R1, R2, R3)
     fig.add_trace(
         go.Scatter(
             x=x_MHz,
@@ -636,10 +559,10 @@ with tab_tr:
     )
 
     st.markdown(
-        "In practice this mechanism allows the cavity bandwidth to be tuned "
-        "thermally by modifying the internal etalon phase. For typical tabletop parameters "
-        "we want to enable bandwidth shifts of ~10% of the baseline pole over temperature changes "
-        "of order 10 °C."
+    "In practice this mechanism allows the cavity bandwidth to be tuned "
+    "thermally by modifying the internal etalon phase. For typical tabletop parameters "
+    "we want to enable bandwidth shifts of ~10\% of the baseline pole over temperature changes "
+    "of order 10 °C."
     )
     # ---------- Plot versus phase around quadrature ----------
     phi0 = np.linspace(-np.pi, np.pi, 4000) + (np.pi / 2)  # centered near quadrature
@@ -685,14 +608,20 @@ with tab_phase:
     st.subheader("Reflection phase and group delay")
     # Single operating temperature for phase plot (ΔT = 0)
     L1_phase = L1
-    phase, tau_g = compute_phase_and_group_delay(
+    r_tot, t_tot = three_surface_response(
         freqs=freqs,
-        R1_val=R1,
-        R2_val=R2,
-        R3_val=R3,
-        L1_m=L1_phase,
-        L2_m_val=L2_m,
+        R1=R1,
+        R2=R2,
+        R3=R3,
+        L1=L1_phase,
+        L2=L2_m,
     )
+
+    phase = np.unwrap(np.angle(r_tot))
+    omega = 2 * np.pi * freqs
+
+    # Numerical derivative for group delay τ_g = dφ/dω
+    tau_g = np.gradient(phase, omega)
 
     x_MHz = dnu_arr * 1e-6
 
@@ -739,6 +668,8 @@ with tab_phase:
     st.latex(r"\theta = 2 k L")
     st.markdown("All rᵢ and tᵢ are **amplitude** reflectivities and transmissivities.")
 
+    st.image("tunablefc_drawing.png")
+    
     st.markdown("#### Etalon transmission")
     st.latex(
         r"""
@@ -902,9 +833,9 @@ w_0 = \sqrt{\frac{\lambda_0}{\pi} z_R}
 
     st.markdown("### Stability from ABCD matrix formalism")
     st.markdown(
-        r"The same condition arises from the paraxial **ABCD matrix** for one "
-        r"round trip of the cavity. For propagation over distance \(L\) and "
-        r"reflection from a spherical mirror of radius \(R\),"
+        "The same condition arises from the paraxial **ABCD matrix** for one "
+        "round trip of the cavity. For propagation over distance \(L\) and "
+        "reflection from a spherical mirror of radius \(R\),"
     )
     st.latex(
         r"""
