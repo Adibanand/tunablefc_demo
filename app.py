@@ -609,7 +609,7 @@ with tab_tr:
         rows=2,
         cols=2,
         shared_xaxes=False,
-        vertical_spacing=0.12,
+        vertical_spacing=0.30,
         horizontal_spacing=0.12,
         subplot_titles=(
             "Bandwidth vs phase (full scan)",
@@ -658,8 +658,6 @@ with tab_tr:
         row=1, col=2
     )
 
-
-
     # ---------- zoom normalized bandwidth ----------
     fig_phase.add_trace(
         go.Scatter(
@@ -678,8 +676,6 @@ with tab_tr:
         line_dash="dash",
         row=2, col=1
     )
-
-
 
     # ---------- zoom normalized tunability ----------
     fig_phase.add_trace(
