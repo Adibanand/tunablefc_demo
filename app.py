@@ -629,7 +629,7 @@ with tab_phase:
     for dT in delta_T_values:
         # Temperature-dependent etalon parameters
         n_T = n_etalon + dn_dT * dT
-        L1_T = L1 + dL1_dT_eff * dT
+        L1_T = L1 + dL1_dT * dT
 
         # Round-trip etalon phase
         phi_T = 4 * np.pi * n_T * L1_T / lambda0
@@ -642,7 +642,7 @@ with tab_phase:
             R2=R2,
             R3=R3,
             L1=L1_T,
-            L2=L2_m - dL1_dT_eff * dT,
+            L2=L2_m - dL1_dT * dT,
             n_substrate=n_T,
         )
 
