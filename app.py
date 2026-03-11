@@ -126,7 +126,7 @@ alpha = st.sidebar.number_input(
 
 dn_dT = st.sidebar.number_input(
     "Thermo-optic coefficient dn/dT (1/K)",
-    value=1.0e-5,
+    value=8.62e-6,
     format="%.2e",
     help="Temperature derivative of the refractive index."
 )
