@@ -643,7 +643,7 @@ with tab_phase:
             R3=R3,
             L1=L1_T,
             L2=L2_m - dL1_dT * dT,
-            n_substrate=n_T,
+            n_substrate=n_etalon,
         )
 
         phase = np.unwrap(np.angle(r_tot))
@@ -805,11 +805,6 @@ T_{\mathrm{tot}}(f)
 \left| t_{\mathrm{tot}}(f) \right|^2
 """
     )
-    st.markdown(
-        "The factor below accounts for one‑way propagation through the long cavity, "
-        "and the group delay panel shows the derivative of the phase:"
-    )
-    st.latex(r"e^{i k L}, \qquad \tau_g = \dfrac{d\phi}{d\omega}")
 
 
 # --------------------------------------------------------------------
