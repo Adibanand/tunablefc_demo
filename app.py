@@ -525,6 +525,9 @@ with tab_tr:
 
     st.markdown(
         "**Note**: See https://lightmachinery.com/optical-design-center/etalon-temperature-tuning/ for thermo-optic properties of different substrates."
+    )
+
+    st.markdown(
         "The phase derivative of the effective transmissivity is"
     )
 
