@@ -176,6 +176,46 @@ use_effective_length = st.sidebar.checkbox(
     help="If checked, the effective cavity length is L₂ + n·L₁.",
 )
 
+import pandas as pd
+from datetime import datetime
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("Save input configuration")
+
+config_dict = {
+    "L1_mm": L1_mm,
+    "L2_m": L2_m,
+    "R1": R1,
+    "R2": R2,
+    "R3": R3,
+    "n_etalon": n_etalon,
+    "alpha_ppm_per_K": alpha,
+    "dn_dT_per_K": dn_dT,
+    "max_delta_T_C": max_delta_T,
+    "n_temperatures": n_temperatures,
+    "eps_loss": eps_loss,
+    "R_c_m": R_c,
+    "use_effective_length": use_effective_length,
+}
+
+if "fiber_mode_radius_um" in locals():
+    config_dict["fiber_mode_radius_um"] = fiber_mode_radius_um
+if "f_coll_mm" in locals():
+    config_dict["f_coll_mm"] = f_coll_mm
+if "z_match_m" in locals():
+    config_dict["z_match_m"] = z_match_m
+
+config_df = pd.DataFrame([config_dict])
+csv_data = config_df.to_csv(index=False).encode("utf-8")
+
+timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+
+st.sidebar.download_button(
+    label="Download current configuration as CSV",
+    data=csv_data,
+    file_name=f"tunablefc_config_{timestamp}.csv",
+    mime="text/csv",
+)
 
 # --------------------------------------------------------------------
 # Helper functions (field-level three-surface model)
@@ -1240,44 +1280,5 @@ t_{\mathrm{tot}}(f)
         "**phase response**, and **group delay** plotted in the other tabs."
     )
 
-import pandas as pd
-from datetime import datetime
 
-st.sidebar.markdown("---")
-st.sidebar.subheader("Save input configuration")
-
-config_dict = {
-    "L1_mm": L1_mm,
-    "L2_m": L2_m,
-    "R1": R1,
-    "R2": R2,
-    "R3": R3,
-    "n_etalon": n_etalon,
-    "alpha_ppm_per_K": alpha,
-    "dn_dT_per_K": dn_dT,
-    "max_delta_T_C": max_delta_T,
-    "n_temperatures": n_temperatures,
-    "eps_loss": eps_loss,
-    "R_c_m": R_c,
-    "use_effective_length": use_effective_length,
-}
-
-if "fiber_mode_radius_um" in locals():
-    config_dict["fiber_mode_radius_um"] = fiber_mode_radius_um
-if "f_coll_mm" in locals():
-    config_dict["f_coll_mm"] = f_coll_mm
-if "z_match_m" in locals():
-    config_dict["z_match_m"] = z_match_m
-
-config_df = pd.DataFrame([config_dict])
-csv_data = config_df.to_csv(index=False).encode("utf-8")
-
-timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-
-st.sidebar.download_button(
-    label="Download current configuration as CSV",
-    data=csv_data,
-    file_name=f"tunablefc_config_{timestamp}.csv",
-    mime="text/csv",
-)
 
