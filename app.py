@@ -482,7 +482,7 @@ with tab_tr:
     st.markdown(
         "Thermal tuning of the cavity bandwidth arises because the etalon phase "
         "depends on temperature through both thermal expansion and the "
-        "thermo-optic effect."
+        "thermo-optic effect. The etalon round-trip phase is"
     )
 
     st.latex(
@@ -524,6 +524,7 @@ with tab_tr:
     )
 
     st.markdown(
+        "**Note**: See https://lightmachinery.com/optical-design-center/etalon-temperature-tuning/ for thermo-optic properties of different substrates."
         "The phase derivative of the effective transmissivity is"
     )
 
