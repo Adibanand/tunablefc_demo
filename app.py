@@ -993,7 +993,9 @@ M_{\text{mirror}} =
 # --------------------------------------------------------------------
 
 with tab_eq:
-    st.subheader("Cavity response derivations")
+    
+    st.markdown("### Cavity optical schematic")
+    st.image("opticalschematic.png")
 
     st.markdown("### Effective transmissivity of compound mirror")
     st.latex(
