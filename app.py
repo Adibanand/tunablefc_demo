@@ -658,6 +658,8 @@ with tab_tr:
         row=1, col=2
     )
 
+
+
     # ---------- zoom normalized bandwidth ----------
     fig_phase.add_trace(
         go.Scatter(
@@ -676,6 +678,8 @@ with tab_tr:
         line_dash="dash",
         row=2, col=1
     )
+
+
 
     # ---------- zoom normalized tunability ----------
     fig_phase.add_trace(
@@ -733,35 +737,6 @@ with tab_tr:
     indicate good candidate **phase parking regions** for operating the tunable cavity.
     """
     )
-
-    # ---------------- Panel 1: full phase scan ----------------
-    axes[0].plot(phi0, gamma_vals/1e6, label="Pole frequency $\\gamma$ (MHz)")
-    axes[0].plot(phi0, tune_vals/1e6, label="Tunability $d\\gamma/dT$ (MHz/K)")
-    axes[0].axvline(np.pi/2, linestyle="--", linewidth=1, label="Quadrature $\\phi=\\pi/2$")
-    axes[0].set_xlabel("Etalon phase $\\phi$")
-    axes[0].set_ylabel("Frequency (Hz)")
-    axes[0].set_title("Filter cavity pole and tunability vs etalon phase")
-    axes[0].grid(True)
-    axes[0].legend()
-
-    # ---------------- Panel 2: zoom near quadrature ----------------
-    phi_q = np.pi / 2
-    zoom_width = 1.0
-
-    mask = (phi0 > phi_q - zoom_width) & (phi0 < phi_q + zoom_width)
-
-    axes[1].plot(phi0[mask], gamma_vals[mask]/1e6, label="$\\gamma$ (MHz)")
-    axes[1].plot(phi0[mask], tune_vals[mask]/1e6, label="$d\\gamma/dT$ (MHz/K)")
-    axes[1].axvline(phi_q, linestyle="--", linewidth=1, label="Quadrature")
-    axes[1].set_xlabel("Etalon phase $\\phi$")
-    axes[1].set_ylabel("Frequency (Hz)")
-    axes[1].set_title("Zoom near quadrature")
-    axes[1].grid(True)
-    axes[1].legend()
-
-    plt.tight_layout()
-    st.pyplot(fig)
-
 # --------------------------------------------------------------------
 # Tab 2: Phase response and group delay
 # --------------------------------------------------------------------
