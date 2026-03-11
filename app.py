@@ -612,12 +612,13 @@ with tab_phase:
 
     st.subheader("Reflection phase and group delay")
 
-    fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
+    fig, axes = plt.subplots(2, 1, figsize=(6, 4), sharex=True)
 
     x_MHz = dnu_arr * 1e-6
 
     for dT in delta_T_values:
         L1_T = L1 + dL1_dT_eff * dT
+        phi_T = 4*np.pi*n_etalon*L1_T/lambda0
 
         r_tot, t_tot = three_surface_response(
             freqs=freqs,
@@ -632,7 +633,7 @@ with tab_phase:
         omega = 2 * np.pi * freqs
         tau_g = np.gradient(phase, omega)
 
-        axes[0].plot(x_MHz, phase, label=f"Delta T = {dT:.2f} C")
+        axes[0].plot(x_MHz, phase, label=rf"$\phi$ = {phi_T:.2f}")
         axes[1].plot(x_MHz, tau_g)
 
     axes[0].set_ylabel("Reflection phase [rad]")
@@ -647,6 +648,8 @@ with tab_phase:
 
     st.pyplot(fig)
     plt.close(fig)
+
+    st.subheader("Reflection phase and group delay: ΔT = 0")
 
     # Single operating temperature for phase plot (ΔT = 0)
     L1_phase = L1
