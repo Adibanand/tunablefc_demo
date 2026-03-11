@@ -25,21 +25,51 @@ dnu_arr = np.linspace(-0.001e9, 0.001e9, 1000) # alter upper and lower bounds ac
 nu = nu0 + dnu_arr
 k = 2 * np.pi * nu / c 
 
-
-def BW_tunability(L1, L2, R1, R2, R3, lamb=1064e-9, tunability=0.55, heating_capacity=10, n=1.45):
+def BW_tunability(
+    L1,
+    L2,
+    R1,
+    R2,
+    R3,
+    lamb=1064e-9,
+    tunability=0.55,
+    heating_capacity=10,
+    n=1.45,
+    dn_dT=1.0e-5,
+):
     c = 3e8
     prefactor = c / (8 * np.pi * L2)
-    num = (1 - R1)*(1 - R2)
-    denom = 1 - 2 * np.sqrt(R1 * R2) * np.cos(4 * np.pi * L1 * n / lamb) + R1*R2
-    
-    baseline_bw = prefactor * (num / denom + (1 - R3))
 
-    dL1_dT = tunability * 1e-6 * L1 
-    dTeff_dphi = -num * (2 * np.sqrt(R1*R2) * np.sin(4 * np.pi * L1 *n / lamb)) / (denom**2)
+    # Effective thermal expansion coefficient inferred from your tunability input
+    alpha_eff = tunability * 1e-6
+
+    # Thermal expansion of the etalon thickness
+    dL1_dT = alpha_eff * L1
+
+    # Etalon round-trip phase
+    phi = 4 * np.pi * n * L1 / lamb
+
+    # Effective transmissivity
+    num = (1 - R1) * (1 - R2)
+    denom = 1 - 2 * np.sqrt(R1 * R2) * np.cos(phi) + R1 * R2
+    Teff = num / denom
+
+    # Baseline cavity pole
+    baseline_bw = prefactor * (Teff + (1 - R3))
+
+    # dTeff/dphi
+    dTeff_dphi = -num * (2 * np.sqrt(R1 * R2) * np.sin(phi)) / (denom ** 2)
+
+    # Full thermal phase derivative including both expansion and thermo-optic effect
+    dphi_dT = (4 * np.pi / lamb) * (n * dL1_dT + L1 * dn_dT)
+
+    # Thermal tunability of cavity pole
+    bw_expansion = prefactor * dTeff_dphi * dphi_dT
+
+    # Keep this too if you still want length sensitivity separately
     dgamma_dL1 = prefactor * dTeff_dphi * (4 * np.pi * n / lamb)
-    bw_expansion = dgamma_dL1 * dL1_dT
 
-    return baseline_bw, bw_expansion, dL1_dT, dgamma_dL1 
+    return baseline_bw, bw_expansion, dL1_dT, dgamma_dL1
 
 def T_3_mirror(k, L1, L2, R1, R2, R3):
     r1, r2, r3 = np.sqrt(R1), np.sqrt(R2), np.sqrt(R3)
