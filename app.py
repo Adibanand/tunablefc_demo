@@ -310,7 +310,7 @@ N_points = 2001
 dnu_arr = np.linspace(-span_Hz / 2.0, span_Hz / 2.0, N_points)
 freqs = f0 + dnu_arr
 
-g1, g2, g_prod, is_stable = simple_stability(L_eff=L_2, R_c=R_c)
+g1, g2, g_prod, is_stable = simple_stability(L_eff=L2_m, R_c=R_c)
 
 
 # --------------------------------------------------------------------
