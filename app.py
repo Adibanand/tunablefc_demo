@@ -566,6 +566,116 @@ with tab_tr:
     "of order 10 °C."
     )
     # ---------- Plot versus phase around quadrature ----------
+
+    # ---------- Plot versus etalon phase ----------
+    st.markdown("### Pole frequency and thermal tunability vs etalon phase")
+
+    phi0 = np.linspace(-np.pi, np.pi, 4000) + (np.pi / 2)  # centered near quadrature
+
+    gamma_vals = pole_gamma(phi0, R1, R2, L2_m, eps_loss=eps_loss)
+    tune_vals = tunability_dgamma_dT(phi0, L1, R1, R2, L2_m, eps_loss=eps_loss)
+
+    phi_q = np.pi / 2
+    zoom_width = 1.0
+    mask = (phi0 > phi_q - zoom_width) & (phi0 < phi_q + zoom_width)
+
+    from plotly.subplots import make_subplots
+    import plotly.graph_objects as go
+
+    fig_phase = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=(
+            "Full phase scan",
+            "Zoom near operating point",
+        ),
+        horizontal_spacing=0.12,
+    )
+
+    # Full scan
+    fig_phase.add_trace(
+        go.Scatter(
+            x=phi0,
+            y=gamma_vals / 1e6,
+            mode="lines",
+            name="Pole frequency gamma [MHz]",
+            line=dict(width=2),
+        ),
+        row=1,
+        col=1,
+    )
+
+    fig_phase.add_trace(
+        go.Scatter(
+            x=phi0,
+            y=tune_vals / 1e6,
+            mode="lines",
+            name="Tunability dgamma/dT [MHz/K]",
+            line=dict(width=2),
+        ),
+        row=1,
+        col=1,
+    )
+
+    fig_phase.add_vline(
+        x=phi_q,
+        line_width=1,
+        line_dash="dash",
+        annotation_text="Quadrature",
+        row=1,
+        col=1,
+    )
+
+    # Zoomed scan
+    fig_phase.add_trace(
+        go.Scatter(
+            x=phi0[mask],
+            y=gamma_vals[mask] / 1e6,
+            mode="lines",
+            name="Pole frequency gamma [MHz] (zoom)",
+            showlegend=False,
+            line=dict(width=2),
+        ),
+        row=1,
+        col=2,
+    )
+
+    fig_phase.add_trace(
+        go.Scatter(
+            x=phi0[mask],
+            y=tune_vals[mask] / 1e6,
+            mode="lines",
+            name="Tunability dgamma/dT [MHz/K] (zoom)",
+            showlegend=False,
+            line=dict(width=2),
+        ),
+        row=1,
+        col=2,
+    )
+
+    fig_phase.add_vline(
+        x=phi_q,
+        line_width=1,
+        line_dash="dash",
+        annotation_text="Quadrature",
+        row=1,
+        col=2,
+    )
+
+    fig_phase.update_xaxes(title_text="Etalon phase phi [rad]", row=1, col=1)
+    fig_phase.update_xaxes(title_text="Etalon phase phi [rad]", row=1, col=2)
+
+    fig_phase.update_yaxes(title_text="Frequency scale [MHz or MHz/K]", row=1, col=1, fixedrange=True)
+    fig_phase.update_yaxes(title_text="Frequency scale [MHz or MHz/K]", row=1, col=2, fixedrange=True)
+
+    fig_phase.update_layout(
+        height=450,
+        dragmode="zoom",
+        legend_title_text="Quantities",
+    )
+
+    st.plotly_chart(fig_phase, use_container_width=True)
+
     phi0 = np.linspace(-np.pi, np.pi, 4000) + (np.pi / 2)  # centered near quadrature
 
     gamma_vals = pole_gamma(phi0, R1, R2, L2_m, eps_loss=eps_loss)
@@ -788,7 +898,7 @@ with tab_phase:
     st.markdown(
         "The curves above show how thermal tuning of the etalon modifies the "
         "complex reflection phase and associated group delay of the three-surface cavity. "
-        "Here the etalon phase is computed from the temperature-dependent optical path length, "
+        "In the above plots the etalon phase is computed from the temperature-dependent optical path length, "
         "including both thermal expansion and the thermo-optic contribution."
     )
 
