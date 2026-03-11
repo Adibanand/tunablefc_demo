@@ -612,21 +612,11 @@ with tab_phase:
 
     st.subheader("Reflection phase and group delay")
 
-    from plotly.subplots import make_subplots
-
-    fig2 = make_subplots(
-        rows=2,
-        cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
-        row_heights=[0.5, 0.5],
-    )
+    fig, axes = plt.subplots(2, 1, figsize=(8, 6), sharex=True)
 
     x_MHz = dnu_arr * 1e-6
 
     for dT in delta_T_values:
-
-        # temperature tuned etalon thickness
         L1_T = L1 + dL1_dT_eff * dT
 
         r_tot, t_tot = three_surface_response(
@@ -640,43 +630,24 @@ with tab_phase:
 
         phase = np.unwrap(np.angle(r_tot))
         omega = 2 * np.pi * freqs
-
         tau_g = np.gradient(phase, omega)
 
-        fig2.add_trace(
-            go.Scatter(
-                x=x_MHz,
-                y=phase,
-                mode="lines",
-                name=f"ΔT = {dT:.2f} °C"
-            ),
-            row=1,
-            col=1,
-        )
+        axes[0].plot(x_MHz, phase, label=f"Delta T = {dT:.2f} C")
+        axes[1].plot(x_MHz, tau_g)
 
-        fig2.add_trace(
-            go.Scatter(
-                x=x_MHz,
-                y=tau_g,
-                mode="lines",
-                showlegend=False
-            ),
-            row=2,
-            col=1,
-        )
+    axes[0].set_ylabel("Reflection phase [rad]")
+    axes[0].set_title("Reflection phase vs frequency detuning")
+    axes[0].grid(True)
+    axes[0].legend(fontsize=8)
 
-    fig2.update_yaxes(title_text="arg(r_tot) [rad]", row=1, col=1, fixedrange=True)
-    fig2.update_yaxes(title_text="τ_g [s]", row=2, col=1, fixedrange=True)
-    fig2.update_xaxes(title_text="Frequency detuning Δν [MHz]", row=2, col=1)
+    axes[1].set_xlabel("Frequency detuning [MHz]")
+    axes[1].set_ylabel("Group delay [s]")
+    axes[1].set_title("Group delay vs frequency detuning")
+    axes[1].grid(True)
 
-    fig2.update_layout(
-        dragmode="zoom",
-        height=500,
-    )
+    st.pyplot(fig)
+    plt.close(fig)
 
-    st.plotly_chart(fig2, use_container_width=True)
-
-    st.subheader("Reflection phase and group delay")
     # Single operating temperature for phase plot (ΔT = 0)
     L1_phase = L1
     r_tot, t_tot = three_surface_response(
