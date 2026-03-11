@@ -610,6 +610,9 @@ with tab_tr:
 
 with tab_phase:
 
+    import plotly.graph_objects as go
+    from plotly.subplots import make_subplots
+
     fig = make_subplots(
     rows=1, cols=2,
     subplot_titles=("Reflection phase vs frequency detuning",
