@@ -294,7 +294,7 @@ def tunability_dgamma_dT(phi, L1, R1, R2, L2, eps_loss=1e-6):
 L1 = L1_mm * 1e-3  # convert to metres
 
 # Use BW_tunability with explicit tunability value in ppm/K
-baseline_bw, bw_expansion, dL1_dT_eff, dgamma_dL1 = BW_tunability(
+baseline_bw, bw_expansion, dL1_dT, dgamma_dL1 = BW_tunability(
     L1, L2_m, R1, R2, R3, tunability=alpha, n=n_etalon, dn_dT=dn_dT
 )
 
@@ -339,7 +339,7 @@ with tab_tr:
 
     # Temperature-tuned curves (using effective dL1/dT from the bandwidth model)
     for dT in delta_T_values:
-        L1_T = L1 + dL1_dT_eff * dT
+        L1_T = L1 + dL1_dT * dT
         T3 = T_3_mirror(k_vals, L1_T, L2_m, R1, R2, R3)
         bw_T = baseline_bw + bw_expansion * dT
         fig.add_trace(
@@ -407,7 +407,7 @@ with tab_tr:
 
 - Baseline pole (bandwidth): **{baseline_bw/1e3:.2f} kHz**
 - Bandwidth tunability: **{bw_expansion/1e3:.2f} kHz / °C**
-- Effective dL₁/dT: **{dL1_dT_eff*1e9:.3f} nm / °C**
+- dL₁/dT: **{dL1_dT*1e9:.3f} nm / °C**
 """
     )
 
@@ -642,7 +642,7 @@ with tab_phase:
             R2=R2,
             R3=R3,
             L1=L1_T,
-            L2=L2_m,
+            L2=L2_m - dL1_dT_eff * dT,
             n_substrate=n_T,
         )
 
