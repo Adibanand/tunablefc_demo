@@ -372,7 +372,6 @@ with tab_tr:
         yaxis_type="log",
         dragmode="zoom",
         yaxis=dict(fixedrange=True),
-        title="Power Transmission with Etalon Tuning",
         legend=dict(orientation="v"),
         annotations=[
             dict(
