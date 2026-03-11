@@ -610,7 +610,86 @@ with tab_tr:
 
 with tab_phase:
 
-    st.subheader("Reflection phase and group delay with temperature tuning")
+    st.subheader("Reflection phase and group delay: neglecting the effects of refractive index temperature tuning (dn/dT)")
+
+    from plotly.subplots import make_subplots
+
+    x_MHz = dnu_arr * 1e-6
+
+    fig = make_subplots(
+        rows=1,
+        cols=2,
+        subplot_titles=(
+            "Reflection phase vs frequency detuning",
+            "Group delay vs frequency detuning",
+        ),
+        horizontal_spacing=0.12,
+    )
+
+    for dT in delta_T_values:
+        # Temperature-dependent etalon parameters
+        L1_T = L1 + dL1_dT * dT
+
+        # Round-trip etalon phase
+        phi_T = 4 * np.pi * n_T * L1_T / lambda0
+        phi_T_wrapped = np.mod(phi_T, 2 * np.pi)
+
+        # Full three-surface response with temperature-dependent substrate index
+        r_tot, t_tot = three_surface_response(
+            freqs=freqs,
+            R1=R1,
+            R2=R2,
+            R3=R3,
+            L1=L1_T,
+            L2=L2_m - dL1_dT * dT,
+            n_substrate=n_etalon,
+        )
+
+        phase = np.unwrap(np.angle(r_tot))
+        omega = 2 * np.pi * freqs
+
+        # Group delay: tau_g = -d(arg r)/d omega
+        tau_g = -np.gradient(phase, omega)
+
+        fig.add_trace(
+            go.Scatter(
+                x=x_MHz,
+                y=phase,
+                mode="lines",
+                name=f"ΔT = {dT:.2f} °C, φ mod 2π = {phi_T_wrapped:.2f}",
+                line=dict(width=2),
+            ),
+            row=1,
+            col=1,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=x_MHz,
+                y=tau_g,
+                mode="lines",
+                showlegend=False,
+                line=dict(width=2),
+            ),
+            row=1,
+            col=2,
+        )
+
+    fig.update_xaxes(title_text="Frequency detuning Δν [MHz]", row=1, col=1)
+    fig.update_xaxes(title_text="Frequency detuning Δν [MHz]", row=1, col=2)
+
+    fig.update_yaxes(title_text="Reflection phase [rad]", row=1, col=1, fixedrange=True)
+    fig.update_yaxes(title_text="Group delay [s]", row=1, col=2, fixedrange=True)
+
+    fig.update_layout(
+        dragmode="zoom",
+        height=500,
+        legend_title_text="Temperature tuning",
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+     st.subheader("Reflection phase and group delay: neglecting the effects of refractive index temperature tuning (dn/dT)")
 
     from plotly.subplots import make_subplots
 
@@ -643,7 +722,7 @@ with tab_phase:
             R3=R3,
             L1=L1_T,
             L2=L2_m - dL1_dT * dT,
-            n_substrate=n_etalon,
+            n_substrate=n_T,
         )
 
         phase = np.unwrap(np.angle(r_tot))
