@@ -610,7 +610,9 @@ with tab_tr:
 
 with tab_phase:
 
-    st.subheader("Reflection phase and group delay: neglecting the effects of refractive index temperature tuning (dn/dT)")
+    st.subheader("Reflection phase and group delay")
+    
+    st.markdown("**Neglecting the effects of refractive index temperature tuning (dn/dT)**")
 
     from plotly.subplots import make_subplots
 
@@ -689,7 +691,7 @@ with tab_phase:
 
     st.plotly_chart(fig, use_container_width=True)
 
-     st.subheader("Reflection phase and group delay: neglecting the effects of refractive index temperature tuning (dn/dT)")
+    st.markdown("**Considering the effects of refractive index temperature tuning (dn/dT)**")
 
     from plotly.subplots import make_subplots
 
