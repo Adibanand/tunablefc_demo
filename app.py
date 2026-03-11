@@ -610,45 +610,6 @@ with tab_tr:
 
 with tab_phase:
 
-    st.subheader("Reflection phase and group delay")
-
-    fig, axes = plt.subplots(2, 1, figsize=(6, 4), sharex=True)
-
-    x_MHz = dnu_arr * 1e-6
-
-    for dT in delta_T_values:
-        L1_T = L1 + dL1_dT_eff * dT
-        phi_T = 4*np.pi*n_etalon*L1_T/lambda0
-
-        r_tot, t_tot = three_surface_response(
-            freqs=freqs,
-            R1=R1,
-            R2=R2,
-            R3=R3,
-            L1=L1_T,
-            L2=L2_m,
-        )
-
-        phase = np.unwrap(np.angle(r_tot))
-        omega = 2 * np.pi * freqs
-        tau_g = np.gradient(phase, omega)
-
-        axes[0].plot(x_MHz, phase, label=rf"$\phi$ = {phi_T:.2f}")
-        axes[1].plot(x_MHz, tau_g)
-
-    axes[0].set_ylabel("Reflection phase [rad]")
-    axes[0].set_title("Reflection phase vs frequency detuning")
-    axes[0].grid(True)
-    axes[0].legend(fontsize=8)
-
-    axes[1].set_xlabel("Frequency detuning [MHz]")
-    axes[1].set_ylabel("Group delay [s]")
-    axes[1].set_title("Group delay vs frequency detuning")
-    axes[1].grid(True)
-
-    st.pyplot(fig)
-    plt.close(fig)
-
     st.subheader("Reflection phase and group delay: ΔT = 0")
 
     # Single operating temperature for phase plot (ΔT = 0)
@@ -700,6 +661,47 @@ with tab_phase:
     )
 
     st.plotly_chart(fig2, use_container_width=True)
+
+    st.subheader("Reflection phase and group delay with temperature tuning")
+
+    fig, axes = plt.subplots(2, 1, figsize=(6, 4), sharex=True)
+
+    x_MHz = dnu_arr * 1e-6
+
+    for dT in delta_T_values:
+        L1_T = L1 + dL1_dT_eff * dT
+        phi_T = 4*np.pi*n_etalon*L1_T/lambda0
+        phi_T_wrapped = np.mod(phi_T, 2*np.pi)
+
+        r_tot, t_tot = three_surface_response(
+            freqs=freqs,
+            R1=R1,
+            R2=R2,
+            R3=R3,
+            L1=L1_T,
+            L2=L2_m,
+        )
+
+        phase = np.unwrap(np.angle(r_tot))
+        omega = 2 * np.pi * freqs
+        tau_g = np.gradient(phase, omega)
+
+        axes[0].plot(x_MHz, phase, label=rf"$\phi$ = {phi_T_wrapped:.2f}", fontsize=9)
+        axes[1].plot(x_MHz, tau_g)
+
+    axes[0].set_ylabel("Reflection phase [rad]")
+    axes[0].set_title("Reflection phase vs frequency detuning", fontsize=8)
+    axes[0].grid(True)
+    axes[0].legend(fontsize=8)
+
+    axes[1].set_xlabel("Frequency detuning [MHz]")
+    axes[1].set_ylabel("Group delay [s]")
+    axes[1].set_title("Group delay vs frequency detuning", fontsize=8)
+    axes[1].grid(True)
+
+    st.pyplot(fig)
+    plt.close(fig)
+
 
     st.markdown(
         "This model describes the complex field reflection and transmission profile of the planar etalon-concave cavity. All "
