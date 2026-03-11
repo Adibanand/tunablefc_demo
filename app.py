@@ -633,7 +633,7 @@ with tab_phase:
         L1_T = L1 + dL1_dT * dT
 
         # Round-trip etalon phase
-        phi_T = 4 * np.pi * n_T * L1_T / lambda0
+        phi_T = 4 * np.pi * n_etalon * L1_T / lambda0
         phi_T_wrapped = np.mod(phi_T, 2 * np.pi)
 
         # Full three-surface response with temperature-dependent substrate index
