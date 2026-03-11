@@ -404,8 +404,8 @@ with tab_tr:
         f"""
 **Summary**
 
-- Baseline pole (bandwidth): **{baseline_bw/1e3:.2f} kHz**
-- Bandwidth tunability: **{bw_expansion/1e3:.2f} kHz / °C**
+- Cavity pole (γ): **{baseline_bw/1e3:.2f} kHz**
+- Pole tunability: **{bw_expansion/1e3:.2f} kHz / °C**
 - dL₁/dT: **{dL1_dT*1e9:.3f} nm / °C**
 """
     )
@@ -470,16 +470,15 @@ with tab_tr:
     )
 
     st.markdown(
-        "Here $T_{\\mathrm{eff}}$ is the effective transmissivity of the etalon "
-        "input coupler, $T_3$ is the end mirror fixed transmissivity, $\\epsilon$ represents the round-trip loss, and "
+        "Here $T_3$ is the end mirror fixed transmissivity, $\\epsilon$ represents the round-trip loss, and "
         "$\\gamma$ is the cavity pole or half-width at half-maximum. These "
         "quantities set the Lorentzian resonance width of the cavity."
     )
 
-    st.markdown("### Thermal tunability of the cavity pole")
+    st.markdown("### Tuning of the cavity pole via etalon thermal effects")
 
     st.markdown(
-        "Thermal tuning of the cavity bandwidth arises because the etalon phase "
+        "Thermal tuning of γ arises because the etalon phase "
         "depends on temperature through both thermal expansion and the "
         "thermo-optic effect. The etalon round-trip phase is"
     )
@@ -610,8 +609,25 @@ with tab_tr:
 with tab_phase:
 
     st.subheader("Reflection phase and group delay")
+
+    st.markdown(
+    """
+    The reflected **phase response** of the cavity determines how different frequency components
+    of the optical field acquire phase shifts upon reflection. A frequency-dependent phase shift
+    corresponds to a **rotation of the optical quadrature**, which is the way in which
+    a filter cavity modifies the phase of sidebands relative to the carrier.
+
+    The **slope of the phase response** is the **group delay**. Physically, the group delay corresponds to the
+    effective **photon storage time** of the cavity. Light circulates inside the cavity for some
+    time before leaking back out, producing a delay that depends on frequency.
+
+    Changing the transmissivity of the input coupler modifies the cavity bandwidth, which
+    changes both the **phase slope** and the **storage time**. This is why tuning the etalon
+    allows the cavity dispersion to be adjusted.
+    """
+    )
     
-    st.markdown("**Neglecting the effects of refractive index temperature tuning (dn/dT)**")
+    st.markdown("**Neglecting the thermo-optic effect of the etalon refractive index (dn/dT):**")
 
     from plotly.subplots import make_subplots
 
@@ -780,13 +796,12 @@ with tab_phase:
     st.latex(r"\phi(T) = \frac{4\pi\,n(T)\,L_1(T)}{\lambda_0}")
     st.latex(r"\tau_g = -\frac{d}{d\omega}\arg\!\left(r_{\mathrm{tot}}\right)")
 
-    st.markdown(
-        "This model describes the complex field reflection and transmission profile of the planar etalon-concave cavity. All "
-        "quantities are treated at the **field level**, with frequency dependence "
-        "retained explicitly."
-    )
 
     st.markdown("#### Definitions")
+    st.markdown(
+        "We obtain the phase response by calculating the complex field reflection and transmission profile of the planar etalon-concave cavity."
+    )
+
     st.latex(r"k = \frac{2\pi f}{c}")
     st.latex(r"\delta = 2 k n d")
     st.latex(r"\theta = 2 k L")
