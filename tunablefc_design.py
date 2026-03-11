@@ -9,7 +9,7 @@ import time
 import os
 
 from scipy.ndimage import uniform_filter1d
-from ipywidgets import interact
+#from ipywidgets import interact
 
 
 from scipy.signal import savgol_filter
