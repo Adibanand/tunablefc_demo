@@ -310,8 +310,7 @@ N_points = 2001
 dnu_arr = np.linspace(-span_Hz / 2.0, span_Hz / 2.0, N_points)
 freqs = f0 + dnu_arr
 
-L_eff = L2_m + (use_effective_length * 1.0) * n_etalon * L1
-g1, g2, g_prod, is_stable = simple_stability(L_eff=L_eff, R_c=R_c)
+g1, g2, g_prod, is_stable = simple_stability(L_eff=L_2, R_c=R_c)
 
 
 # --------------------------------------------------------------------
@@ -921,14 +920,8 @@ g_1 = 1, \qquad g_2 = 1 - \frac{L_{\mathrm{2}}}{R_c},
     )
     st.markdown("and the cavity is **geometrically stable** if")
     st.latex(
-        r"""
-0 < g_1 g_2 < 1.
-"""
-    )
-
-    st.latex(
-        r"""
-L_{\mathrm{eff}} = L_2 + n L_1, \qquad g_1 = 1, \qquad g_2 = 1 - \frac{L_{\mathrm{eff}}}{R_c}
+        rf"""
+0 < g_1 g_2 = {g_prod}< 1.
 """
     )
 
