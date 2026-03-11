@@ -610,6 +610,58 @@ with tab_tr:
 
 with tab_phase:
 
+    fig = make_subplots(
+    rows=1, cols=2,
+    subplot_titles=("Reflection phase vs frequency detuning",
+                    "Group delay vs frequency detuning")
+    )
+
+    for dT in delta_T_values:
+        n_T = n_etalon + dn_dT * dT
+        L1_T = L1 + dL1_dT_eff * dT
+
+        phi_T = 4*np.pi*n_T*L1_T/lambda0
+        phi_T_wrapped = np.mod(phi_T, 2*np.pi)
+
+        r_tot, t_tot = three_surface_response(
+            freqs=freqs,
+            R1=R1,
+            R2=R2,
+            R3=R3,
+            L1=L1_T,
+            L2=L2_m,
+        )
+
+        phase = np.unwrap(np.angle(r_tot))
+        omega = 2*np.pi*freqs
+        tau_g = -np.gradient(phase, omega)
+
+        fig.add_trace(
+            go.Scatter(
+                x=x_MHz,
+                y=phase,
+                name=f"φ={phi_T_wrapped:.2f}",
+                line=dict(width=2)
+            ),
+            row=1, col=1
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=x_MHz,
+                y=tau_g,
+                showlegend=False,
+                line=dict(width=2)
+            ),
+            row=1, col=2
+        )
+
+    fig.update_xaxes(title_text="Frequency detuning [MHz]")
+    fig.update_yaxes(title_text="Reflection phase [rad]", row=1, col=1)
+    fig.update_yaxes(title_text="Group delay [s]", row=1, col=2)
+
+    st.plotly_chart(fig, use_container_width=True)
+
     st.subheader("Reflection phase and group delay: ΔT = 0")
 
     # Single operating temperature for phase plot (ΔT = 0)
@@ -669,6 +721,7 @@ with tab_phase:
     x_MHz = dnu_arr * 1e-6
 
     for dT in delta_T_values:
+        n_T = n_etalon + dn_dT * dT
         L1_T = L1 + dL1_dT_eff * dT
         phi_T = 4*np.pi*n_etalon*L1_T/lambda0
         phi_T_wrapped = np.mod(phi_T, 2*np.pi)
