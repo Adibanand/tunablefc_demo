@@ -610,22 +610,32 @@ with tab_tr:
 
 with tab_phase:
 
-    import plotly.graph_objects as go
+    st.subheader("Reflection phase and group delay with temperature tuning")
+
     from plotly.subplots import make_subplots
 
+    x_MHz = dnu_arr * 1e-6
+
     fig = make_subplots(
-    rows=1, cols=2,
-    subplot_titles=("Reflection phase vs frequency detuning",
-                    "Group delay vs frequency detuning")
+        rows=1,
+        cols=2,
+        subplot_titles=(
+            "Reflection phase vs frequency detuning",
+            "Group delay vs frequency detuning",
+        ),
+        horizontal_spacing=0.12,
     )
 
     for dT in delta_T_values:
+        # Temperature-dependent etalon parameters
         n_T = n_etalon + dn_dT * dT
         L1_T = L1 + dL1_dT_eff * dT
 
-        phi_T = 4*np.pi*n_T*L1_T/lambda0
-        phi_T_wrapped = np.mod(phi_T, 2*np.pi)
+        # Round-trip etalon phase
+        phi_T = 4 * np.pi * n_T * L1_T / lambda0
+        phi_T_wrapped = np.mod(phi_T, 2 * np.pi)
 
+        # Full three-surface response with temperature-dependent substrate index
         r_tot, t_tot = three_surface_response(
             freqs=freqs,
             R1=R1,
@@ -633,131 +643,62 @@ with tab_phase:
             R3=R3,
             L1=L1_T,
             L2=L2_m,
+            n_substrate=n_T,
         )
 
         phase = np.unwrap(np.angle(r_tot))
-        omega = 2*np.pi*freqs
+        omega = 2 * np.pi * freqs
+
+        # Group delay: tau_g = -d(arg r)/d omega
         tau_g = -np.gradient(phase, omega)
 
         fig.add_trace(
             go.Scatter(
                 x=x_MHz,
                 y=phase,
-                name=f"φ={phi_T_wrapped:.2f}",
-                line=dict(width=2)
+                mode="lines",
+                name=f"ΔT = {dT:.2f} °C, φ mod 2π = {phi_T_wrapped:.2f}",
+                line=dict(width=2),
             ),
-            row=1, col=1
+            row=1,
+            col=1,
         )
 
         fig.add_trace(
             go.Scatter(
                 x=x_MHz,
                 y=tau_g,
+                mode="lines",
                 showlegend=False,
-                line=dict(width=2)
+                line=dict(width=2),
             ),
-            row=1, col=2
+            row=1,
+            col=2,
         )
 
-    fig.update_xaxes(title_text="Frequency detuning [MHz]")
-    fig.update_yaxes(title_text="Reflection phase [rad]", row=1, col=1)
-    fig.update_yaxes(title_text="Group delay [s]", row=1, col=2)
+    fig.update_xaxes(title_text="Frequency detuning Δν [MHz]", row=1, col=1)
+    fig.update_xaxes(title_text="Frequency detuning Δν [MHz]", row=1, col=2)
+
+    fig.update_yaxes(title_text="Reflection phase [rad]", row=1, col=1, fixedrange=True)
+    fig.update_yaxes(title_text="Group delay [s]", row=1, col=2, fixedrange=True)
+
+    fig.update_layout(
+        dragmode="zoom",
+        height=500,
+        legend_title_text="Temperature tuning",
+    )
 
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("Reflection phase and group delay: ΔT = 0")
-
-    # Single operating temperature for phase plot (ΔT = 0)
-    L1_phase = L1
-    r_tot, t_tot = three_surface_response(
-        freqs=freqs,
-        R1=R1,
-        R2=R2,
-        R3=R3,
-        L1=L1_phase,
-        L2=L2_m,
+    st.markdown(
+        "The curves above show how thermal tuning of the etalon modifies the "
+        "complex reflection phase and associated group delay of the three-surface cavity. "
+        "Here the etalon phase is computed from the temperature-dependent optical path length, "
+        "including both thermal expansion and the thermo-optic contribution."
     )
 
-    phase = np.unwrap(np.angle(r_tot))
-    omega = 2 * np.pi * freqs
-
-    # Numerical derivative for group delay τ_g = dφ/dω
-    tau_g = np.gradient(phase, omega)
-
-    x_MHz = dnu_arr * 1e-6
-
-    from plotly.subplots import make_subplots
-    fig2 = make_subplots(
-        rows=2,
-        cols=1,
-        shared_xaxes=True,
-        vertical_spacing=0.05,
-        row_heights=[0.5, 0.5],
-    )
-
-    fig2.add_trace(
-        go.Scatter(x=x_MHz, y=phase, mode="lines", name="Phase"),
-        row=1,
-        col=1,
-    )
-    fig2.add_trace(
-        go.Scatter(x=x_MHz, y=tau_g, mode="lines", name="Group delay"),
-        row=2,
-        col=1,
-    )
-
-    fig2.update_yaxes(title_text="arg(r_tot) [rad]", row=1, col=1, fixedrange=True)
-    fig2.update_yaxes(title_text="τ_g [s]", row=2, col=1, fixedrange=True)
-    fig2.update_xaxes(title_text="Frequency detuning Δν [MHz]", row=2, col=1)
-
-    fig2.update_layout(
-        dragmode="zoom",
-        height=500,
-    )
-
-    st.plotly_chart(fig2, use_container_width=True)
-
-    st.subheader("Reflection phase and group delay with temperature tuning")
-
-    fig, axes = plt.subplots(2, 1, figsize=(6, 4), sharex=True)
-
-    x_MHz = dnu_arr * 1e-6
-
-    for dT in delta_T_values:
-        n_T = n_etalon + dn_dT * dT
-        L1_T = L1 + dL1_dT_eff * dT
-        phi_T = 4*np.pi*n_etalon*L1_T/lambda0
-        phi_T_wrapped = np.mod(phi_T, 2*np.pi)
-
-        r_tot, t_tot = three_surface_response(
-            freqs=freqs,
-            R1=R1,
-            R2=R2,
-            R3=R3,
-            L1=L1_T,
-            L2=L2_m,
-        )
-
-        phase = np.unwrap(np.angle(r_tot))
-        omega = 2 * np.pi * freqs
-        tau_g = np.gradient(phase, omega)
-
-        axes[0].plot(x_MHz, phase, label=rf"$\phi$ = {phi_T_wrapped:.2f}", fontsize=9)
-        axes[1].plot(x_MHz, tau_g)
-
-    axes[0].set_ylabel("Reflection phase [rad]")
-    axes[0].set_title("Reflection phase vs frequency detuning", fontsize=8)
-    axes[0].grid(True)
-    axes[0].legend(fontsize=8)
-
-    axes[1].set_xlabel("Frequency detuning [MHz]")
-    axes[1].set_ylabel("Group delay [s]")
-    axes[1].set_title("Group delay vs frequency detuning", fontsize=8)
-    axes[1].grid(True)
-
-    st.pyplot(fig)
-    plt.close(fig)
-
+    st.latex(r"\phi(T) = \frac{4\pi\,n(T)\,L_1(T)}{\lambda_0}")
+    st.latex(r"\tau_g = -\frac{d}{d\omega}\arg\!\left(r_{\mathrm{tot}}\right)")
 
     st.markdown(
         "This model describes the complex field reflection and transmission profile of the planar etalon-concave cavity. All "
