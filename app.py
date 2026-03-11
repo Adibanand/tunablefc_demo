@@ -19,9 +19,9 @@ st.title("Thermally Tunable Fabry-Perot Filter Cavity")
 st.markdown(
     """
 This webapp models a **plano–concave filter cavity** whose input coupler
-is a **thermally tunable etalon** (two partially reflective surfaces)
+is a **thermally tunable etalon** (two partially reflective surfaces separated by a solid substrate of refractive index n)
 and whose end mirror is a highly reflective concave mirror. 
-The purpose of this model is to demonstrate the effect of modifying the input coupler transmissivity via temperature tuning on the cavity response.
+The purpose of this model is to demonstrate the effect of modifying the input coupler transmissivity via temperature tuning on the filter cavity response.
 
 - Adjust the **geometry**, **mirror reflectivities**, and **thermal tunability**
   from the sidebar.
@@ -205,7 +205,7 @@ def three_surface_response(
     R3,
     L1,
     L2,
-    n_substrate=1.4496,
+    n_substrate=n_etalon,
 ):
     """
     Compute complex reflection and transmission of the three-surface system
@@ -310,7 +310,7 @@ N_points = 2001
 dnu_arr = np.linspace(-span_Hz / 2.0, span_Hz / 2.0, N_points)
 freqs = f0 + dnu_arr
 
-L_eff = L2_m + (use_effective_length * 1.0) * 1.4496 * L1
+L_eff = L2_m + (use_effective_length * 1.0) * n_etalon * L1
 g1, g2, g_prod, is_stable = simple_stability(L_eff=L_eff, R_c=R_c)
 
 
@@ -669,7 +669,7 @@ with tab_phase:
     st.markdown("All rᵢ and tᵢ are **amplitude** reflectivities and transmissivities.")
 
     st.image("tunablefc_drawing.png")
-    
+
     st.markdown("#### Etalon transmission")
     st.latex(
         r"""
