@@ -568,9 +568,20 @@ with tab_tr:
     # ---------- Plot versus phase around quadrature ----------
 
     # ---------- Plot versus etalon phase ----------
-    st.markdown("### Pole frequency and thermal tunability vs etalon phase")
+    st.markdown("### Cavity pole and pole tunability vs etalon phase")
 
-    phi0 = np.linspace(-np.pi, np.pi, 4000) + (np.pi / 2)  # centered near quadrature
+    st.markdown(
+    """
+    An ideal operating region for the tunable input coupler should satisfy:
+
+    - The **bandwidth lies within the desired target range** for the cavity.
+    - The **bandwidth varies monotonically with etalon phase** so that tuning is predictable.
+    - The **thermal tunability** remains relatively flat across the operating region.
+    """
+    )
+
+
+    phi0 = np.linspace(-np.pi, np.pi, 4000) + (np.pi / 2)
 
     gamma_vals = pole_gamma(phi0, R1, R2, L2_m, eps_loss=eps_loss)
     tune_vals = tunability_dgamma_dT(phi0, L1, R1, R2, L2_m, eps_loss=eps_loss)
@@ -579,42 +590,45 @@ with tab_tr:
     zoom_width = 1.0
     mask = (phi0 > phi_q - zoom_width) & (phi0 < phi_q + zoom_width)
 
+    phi_zoom = phi0[mask]
+    gamma_zoom = gamma_vals[mask]
+    tune_zoom = tune_vals[mask]
+
+    # normalize relative to center of zoom window
+    center = len(phi_zoom)//2
+    gamma_ref = gamma_zoom[center]
+    tune_ref = tune_zoom[center]
+
+    gamma_norm = (gamma_zoom - gamma_ref) / gamma_ref
+    tune_norm = (tune_zoom - tune_ref) / tune_ref
+
     from plotly.subplots import make_subplots
     import plotly.graph_objects as go
 
     fig_phase = make_subplots(
-        rows=1,
+        rows=2,
         cols=2,
-        subplot_titles=(
-            "Full phase scan",
-            "Zoom near operating point",
-        ),
+        shared_xaxes=False,
+        vertical_spacing=0.12,
         horizontal_spacing=0.12,
+        subplot_titles=(
+            "Bandwidth vs phase (full scan)",
+            "Tunability vs phase (full scan)",
+            "Normalized bandwidth (zoom)",
+            "Normalized tunability (zoom)",
+        ),
     )
 
-    # Full scan
+    # ---------- full scan bandwidth ----------
     fig_phase.add_trace(
         go.Scatter(
             x=phi0,
-            y=gamma_vals / 1e6,
+            y=gamma_vals/1e6,
             mode="lines",
-            name="Pole frequency gamma [MHz]",
+            name="Bandwidth γ [MHz]",
             line=dict(width=2),
         ),
-        row=1,
-        col=1,
-    )
-
-    fig_phase.add_trace(
-        go.Scatter(
-            x=phi0,
-            y=tune_vals / 1e6,
-            mode="lines",
-            name="Tunability dgamma/dT [MHz/K]",
-            line=dict(width=2),
-        ),
-        row=1,
-        col=1,
+        row=1, col=1
     )
 
     fig_phase.add_vline(
@@ -622,66 +636,103 @@ with tab_tr:
         line_width=1,
         line_dash="dash",
         annotation_text="Quadrature",
-        row=1,
-        col=1,
+        row=1, col=1
     )
 
-    # Zoomed scan
+    # ---------- full scan tunability ----------
     fig_phase.add_trace(
         go.Scatter(
-            x=phi0[mask],
-            y=gamma_vals[mask] / 1e6,
+            x=phi0,
+            y=tune_vals/1e6,
             mode="lines",
-            name="Pole frequency gamma [MHz] (zoom)",
-            showlegend=False,
+            name="Tunability dγ/dT [MHz/K]",
             line=dict(width=2),
         ),
-        row=1,
-        col=2,
-    )
-
-    fig_phase.add_trace(
-        go.Scatter(
-            x=phi0[mask],
-            y=tune_vals[mask] / 1e6,
-            mode="lines",
-            name="Tunability dgamma/dT [MHz/K] (zoom)",
-            showlegend=False,
-            line=dict(width=2),
-        ),
-        row=1,
-        col=2,
+        row=1, col=2
     )
 
     fig_phase.add_vline(
         x=phi_q,
         line_width=1,
         line_dash="dash",
-        annotation_text="Quadrature",
-        row=1,
-        col=2,
+        row=1, col=2
     )
 
-    fig_phase.update_xaxes(title_text="Etalon phase phi [rad]", row=1, col=1)
-    fig_phase.update_xaxes(title_text="Etalon phase phi [rad]", row=1, col=2)
+    # ---------- zoom normalized bandwidth ----------
+    fig_phase.add_trace(
+        go.Scatter(
+            x=phi_zoom,
+            y=gamma_norm,
+            mode="lines",
+            name="Normalized bandwidth",
+            line=dict(width=2),
+        ),
+        row=2, col=1
+    )
 
-    fig_phase.update_yaxes(title_text="Frequency scale [MHz or MHz/K]", row=1, col=1, fixedrange=True)
-    fig_phase.update_yaxes(title_text="Frequency scale [MHz or MHz/K]", row=1, col=2, fixedrange=True)
+    fig_phase.add_vline(
+        x=phi_q,
+        line_width=1,
+        line_dash="dash",
+        row=2, col=1
+    )
+
+    # ---------- zoom normalized tunability ----------
+    fig_phase.add_trace(
+        go.Scatter(
+            x=phi_zoom,
+            y=tune_norm,
+            mode="lines",
+            name="Normalized tunability",
+            line=dict(width=2),
+        ),
+        row=2, col=2
+    )
+
+    fig_phase.add_vline(
+        x=phi_q,
+        line_width=1,
+        line_dash="dash",
+        row=2, col=2
+    )
+
+    # axis labels
+    fig_phase.update_xaxes(title_text="Etalon phase φ [rad]", row=1, col=1)
+    fig_phase.update_xaxes(title_text="Etalon phase φ [rad]", row=1, col=2)
+    fig_phase.update_xaxes(title_text="Etalon phase φ [rad]", row=2, col=1)
+    fig_phase.update_xaxes(title_text="Etalon phase φ [rad]", row=2, col=2)
+
+    fig_phase.update_yaxes(title_text="Bandwidth γ [MHz]", row=1, col=1, fixedrange=True)
+    fig_phase.update_yaxes(title_text="Tunability dγ/dT [MHz/K]", row=1, col=2, fixedrange=True)
+
+    fig_phase.update_yaxes(
+        title_text="Fractional deviation",
+        row=2, col=1,
+        fixedrange=True
+    )
+
+    fig_phase.update_yaxes(
+        title_text="Fractional deviation",
+        row=2, col=2,
+        fixedrange=True
+    )
 
     fig_phase.update_layout(
-        height=450,
+        height=650,
         dragmode="zoom",
         legend_title_text="Quantities",
     )
 
     st.plotly_chart(fig_phase, use_container_width=True)
 
-    phi0 = np.linspace(-np.pi, np.pi, 4000) + (np.pi / 2)  # centered near quadrature
-
-    gamma_vals = pole_gamma(phi0, R1, R2, L2_m, eps_loss=eps_loss)
-    tune_vals = tunability_dgamma_dT(phi0, L1, R1, R2, L2_m, eps_loss=eps_loss)
-
-    fig, axes = plt.subplots(1, 2, figsize=(15, 4), sharex=False)
+    st.markdown(
+    """
+    The normalized curves in the lower panels show fractional deviations from the
+    center of the zoom window. Regions where the normalized bandwidth varies
+    approximately linearly while the normalized tunability remains relatively flat
+    indicate good candidate **phase parking regions** for operating the tunable cavity.
+    """
+    )
 
     # ---------------- Panel 1: full phase scan ----------------
     axes[0].plot(phi0, gamma_vals/1e6, label="Pole frequency $\\gamma$ (MHz)")
