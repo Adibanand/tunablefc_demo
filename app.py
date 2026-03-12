@@ -95,7 +95,7 @@ with col_R1_input:
         "R₁ (etalon mirror 1)",
         min_value=0.5,
         max_value=0.999999,
-        value=0.90,
+        value=R1_slider,
         step=1e-4,
         format="%.6f",
     )
@@ -115,7 +115,7 @@ with col_R2_input:
         "R₂ (etalon mirror 1)",
         min_value=0.5,
         max_value=0.999999,
-        value=0.90,
+        value=R2_slider,
         step=1e-4,
         format="%.6f",
     )
@@ -135,7 +135,7 @@ with col_R3_input:
         "R₃ (end mirror)",
         min_value=0.9,
         max_value=0.9999999,
-        value=0.9980,
+        value=R3_slider,
         step=1e-5,
         format="%.7f",
     )
