@@ -80,30 +80,65 @@ with col_L2_input:
 
 # Reflectivities (slider + textbox)
 st.sidebar.markdown("**Reflectivities**")
-R1 = st.sidebar.number_input(
-    "R₁ (etalon mirror 1)",
-    min_value=0.5,
-    max_value=0.999999,
-    value=0.90,
-    step=1e-4,
-    format="%.6f",
-)
-R2 = st.sidebar.number_input(
-    "R₂ (etalon mirror 2)",
-    min_value=0.5,
-    max_value=0.999999,
-    value=0.90,
-    step=1e-4,
-    format="%.6f",
-)
-R3 = st.sidebar.number_input(
-    "R₃ (end mirror)",
-    min_value=0.9,
-    max_value=0.9999999,
-    value=0.9980,
-    step=1e-5,
-    format="%.7f",
-)
+col_R1_slider, col_R1_input = st.sidebar.columns([2, 1])
+with col_R1_slider:
+    R1_slider = st.slider(
+        "R₁ (slider)",
+        min_value=0.5,
+        max_value=0.999999,
+        value=0.90,
+        step=1e-4,
+        label_visibility="collapsed",
+    )
+with col_R1_input:
+    R1 = st.sidebar.number_input(
+        "R₁ (etalon mirror 1)",
+        min_value=0.5,
+        max_value=0.999999,
+        value=0.90,
+        step=1e-4,
+        format="%.6f",
+    )
+
+col_R2_slider, col_R2_input = st.sidebar.columns([2, 1])
+with col_R2_slider:
+    R2_slider = st.slider(
+        "R₂ (slider)",
+        min_value=0.5,
+        max_value=0.999999,
+        value=0.90,
+        step=1e-4,
+        label_visibility="collapsed",
+    )
+with col_R2_input:
+    R2 = st.sidebar.number_input(
+        "R₂ (etalon mirror 1)",
+        min_value=0.5,
+        max_value=0.999999,
+        value=0.90,
+        step=1e-4,
+        format="%.6f",
+    )
+
+col_R3_slider, col_R3_input = st.sidebar.columns([2, 1])
+with col_R3_slider:
+    R3_slider = st.slider(
+        "R₃ (slider)",
+        min_value=0.9,
+        max_value=0.9999999,
+        value=0.998,
+        step=1e-5,
+        label_visibility="collapsed",
+    )
+with col_R3_input:
+    R3 = st.sidebar.number_input(
+        "R₃ (end mirror)",
+        min_value=0.9,
+        max_value=0.9999999,
+        value=0.9980,
+        step=1e-5,
+        format="%.7f",
+    )
 
 # Thermal tuning
 st.sidebar.markdown("**Etalon substrate properties**")
@@ -481,9 +516,7 @@ with tab_tr:
 
     st.markdown("### Power transmission model")
     st.markdown(
-        "The three-mirror transmission plotted above is modeled as an effective "
-        "Fabry–Perot cavity whose input coupler is the etalon. The effective "
-        "power transmissivity of the compound input coupler is"
+        "The effective power transmissivity of the etalon input coupler is"
     )
 
     st.latex(
@@ -495,7 +528,7 @@ with tab_tr:
     """
     )
 
-    st.markdown("and the resulting filter-cavity pole is")
+    st.markdown("and the resulting filter-cavity pole $\\gamma$ (half-width at half-maximum) is")
 
     st.latex(
         r"""
@@ -509,12 +542,11 @@ with tab_tr:
     )
 
     st.markdown(
-        "Here $T_3$ is the end mirror fixed transmissivity, $\\epsilon$ represents the round-trip loss, and "
-        "$\\gamma$ is the cavity pole or half-width at half-maximum. These "
-        "quantities set the Lorentzian resonance width of the cavity."
+        "Here $T_3$ is the end mirror fixed transmissivity and $\\epsilon$ represents the round-trip loss."
+        "These quantities set the Lorentzian resonance width of the cavity."
     )
 
-    st.markdown("### Tuning of the cavity pole via etalon thermal effects")
+    st.markdown("### Tuning of the cavity pole (HWHM) via etalon thermal effects")
 
     st.markdown(
         "Thermal tuning of γ arises because the etalon phase "
@@ -960,8 +992,8 @@ with tab_phase:
     st.markdown(
         "The curves above show how thermal tuning of the etalon modifies the "
         "complex reflection phase and associated group delay of the three-surface cavity. "
-        "In the above plots the etalon phase is computed from the temperature-dependent optical path length, "
-        "including both thermal expansion and the thermo-optic contribution."
+        "In the second pair of plots above, the etalon phase is computed from the temperature-dependent optical path length, "
+        "including both thermal expansion and the thermo-optic contribution:"
     )
 
     st.latex(r"\phi(T) = \frac{4\pi\,n(T)\,L_1(T)}{\lambda_0}")
