@@ -200,7 +200,7 @@ R_c = st.sidebar.number_input(
     "End mirror radius of curvature R_c [m]",
     min_value=0.01,
     max_value=1e5,
-    value=1.0,
+    value=0.2,
     step=0.01,
     format="%.3f",
     help="Used for simple plano–concave stability estimate.",
@@ -391,7 +391,13 @@ if 0 < g_prod < 1:
     transverse_mode_spacing_Hz = (FSR_geom_Hz / np.pi) * np.arccos(np.sqrt(g_prod))
 else:
     transverse_mode_spacing_Hz = np.nan
-cavity_linewidth_Hz = 2 * baseline_bw  # FWHM = 2*gamma in this model
+
+# Compute linewidth from the effective etalon transmission formula at current L1.
+phi_current = phi_from_L1(L1, n=n_etalon, lambda0=lambda0)
+Teff_current = Teff(phi_current, R1, R2)
+T3_current = 1.0 - R3
+gamma_from_teff_Hz = (c / (8 * np.pi * L2_m)) * (Teff_current + T3_current + eps_loss)
+cavity_linewidth_Hz = 2.0 * gamma_from_teff_Hz  # FWHM = 2*gamma
 
 
 # --------------------------------------------------------------------
@@ -1173,7 +1179,18 @@ g_1 = 1, \qquad g_2 = 1 - \frac{L_{\mathrm{2}}}{R_c},
         )
 
     st.markdown("### Cavity linewidth")
-    st.markdown("Using the cavity pole \\(\\gamma\\) (HWHM), the cavity linewidth (FWHM) is")
+    st.markdown("Using the effective etalon transmission, the cavity pole (HWHM) is")
+    st.latex(
+        r"""
+\gamma
+=
+\frac{c}{8\pi L_2}
+\left[
+T_{\mathrm{eff}}(\phi) + (1-R_3) + \epsilon
+\right]
+"""
+    )
+    st.markdown("and the cavity linewidth (FWHM) is")
     st.latex(
         r"""
 \Delta \nu_{\mathrm{cav}}
@@ -1181,7 +1198,10 @@ g_1 = 1, \qquad g_2 = 1 - \frac{L_{\mathrm{2}}}{R_c},
 2\gamma
 """
     )
-    st.info(f"Cavity linewidth (FWHM): **{cavity_linewidth_Hz/1e3:.3f} kHz**")
+    st.info(
+        f"Cavity linewidth (FWHM): **{cavity_linewidth_Hz/1e3:.3f} kHz**  "
+        f"(Teff = {Teff_current:.5f})"
+    )
 
     st.markdown("### HOM spacing to linewidth criterion")
     st.latex(
