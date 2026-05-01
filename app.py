@@ -391,6 +391,7 @@ if 0 < g_prod < 1:
     transverse_mode_spacing_Hz = (FSR_geom_Hz / np.pi) * np.arccos(np.sqrt(g_prod))
 else:
     transverse_mode_spacing_Hz = np.nan
+cavity_linewidth_Hz = 2 * baseline_bw  # FWHM = 2*gamma in this model
 
 
 # --------------------------------------------------------------------
@@ -1170,6 +1171,36 @@ g_1 = 1, \qquad g_2 = 1 - \frac{L_{\mathrm{2}}}{R_c},
             "Transverse mode spacing is only real-valued for geometrically stable cavities "
             "(0 < g₁g₂ < 1)."
         )
+
+    st.markdown("### Cavity linewidth")
+    st.markdown("Using the cavity pole \\(\\gamma\\) (HWHM), the cavity linewidth (FWHM) is")
+    st.latex(
+        r"""
+\Delta \nu_{\mathrm{cav}}
+=
+2\gamma
+"""
+    )
+    st.info(f"Cavity linewidth (FWHM): **{cavity_linewidth_Hz/1e3:.3f} kHz**")
+
+    st.markdown("### HOM spacing to linewidth criterion")
+    st.latex(
+        r"""
+\Delta \nu_{\perp} \ge 5\,\Delta \nu_{\mathrm{cav}}
+"""
+    )
+    if np.isfinite(transverse_mode_spacing_Hz):
+        ratio_tm_to_lw = transverse_mode_spacing_Hz / cavity_linewidth_Hz
+        if ratio_tm_to_lw >= 5.0:
+            st.success(
+                f"Criterion satisfied: Δν⊥ / Δν_cav = **{ratio_tm_to_lw:.2f}** (>= 5)"
+            )
+        else:
+            st.warning(
+                f"Criterion not satisfied: Δν⊥ / Δν_cav = **{ratio_tm_to_lw:.2f}** (< 5)"
+            )
+    else:
+        st.warning("Criterion cannot be evaluated because Δν⊥ is not real-valued.")
 
     st.markdown("### Cavity mode parameters (waist and Rayleigh range)")
 
