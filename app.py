@@ -386,6 +386,11 @@ dnu_arr = np.linspace(-span_Hz / 2.0, span_Hz / 2.0, N_points)
 freqs = f0 + dnu_arr
 
 g1, g2, g_prod, is_stable = simple_stability(L_eff=L2_m, R_c=R_c)
+FSR_geom_Hz = c / (2 * L2_m)
+if 0 < g_prod < 1:
+    transverse_mode_spacing_Hz = (FSR_geom_Hz / np.pi) * np.arccos(np.sqrt(g_prod))
+else:
+    transverse_mode_spacing_Hz = np.nan
 
 
 # --------------------------------------------------------------------
@@ -1138,6 +1143,33 @@ g_1 = 1, \qquad g_2 = 1 - \frac{L_{\mathrm{2}}}{R_c},
         "This is a first-pass stability estimate; more detailed models can "
         "include the etalon as an effective mirror with complex phase and loss."
     )
+
+    st.markdown("### Cavity transverse mode spacing")
+    st.markdown(
+        "Using the g-factors, the spacing between adjacent transverse mode orders "
+        r"$(m+n+1)$ is"
+    )
+    st.latex(
+        r"""
+\Delta \nu_{\perp}
+=
+\frac{\mathrm{FSR}}{\pi}
+\cos^{-1}\!\left(\sqrt{g_1 g_2}\right),
+\qquad
+\mathrm{FSR}=\frac{c}{2L_2}
+"""
+    )
+
+    if np.isfinite(transverse_mode_spacing_Hz):
+        st.success(
+            f"Transverse mode spacing: **{transverse_mode_spacing_Hz/1e6:.3f} MHz** "
+            f"(FSR = {FSR_geom_Hz/1e6:.3f} MHz)"
+        )
+    else:
+        st.warning(
+            "Transverse mode spacing is only real-valued for geometrically stable cavities "
+            "(0 < g₁g₂ < 1)."
+        )
 
     st.markdown("### Cavity mode parameters (waist and Rayleigh range)")
 
