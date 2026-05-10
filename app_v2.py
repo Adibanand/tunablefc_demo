@@ -221,15 +221,9 @@ def render_two_mirror_results():
         st.rerun()
         return
 
-    st.title("Two-mirror cavity dashboard")
-    st.caption("Tune the cavity inputs on the left; plots and properties update automatically.")
-
-    control_col, plot_col, info_col = st.columns([0.9, 2.2, 1.1], gap="medium")
+    control_col, plot_col, info_col = st.columns([0.7, 3.2, 1.0], gap="medium")
 
     with control_col:
-        st.markdown("### Tune inputs")
-        st.caption(f"Selected cavity: {st.session_state.geometry}")
-
         R1 = st.slider(
             "R₁ input mirror",
             min_value=0.0,
@@ -340,7 +334,6 @@ def render_two_mirror_results():
         top_x_title = "Δν [MHz]"
 
     with plot_col:
-        st.markdown("### Cavity response")
         fig_response = make_subplots(
             rows=2,
             cols=2,
@@ -390,13 +383,6 @@ def render_two_mirror_results():
         st.plotly_chart(fig_response, use_container_width=True)
 
     with info_col:
-        st.markdown("### Cavity geometry")
-        diagram_path = "planoconcavecavity.png"
-        if os.path.exists(diagram_path):
-            st.image(diagram_path, use_container_width=True)
-        else:
-            st.info("Cavity diagram image not found.")
-
         st.markdown("### Cavity properties")
         st.metric("FSR", f"{props['FSR']/1e6:.3f} MHz")
         st.metric("Linewidth (FWHM)", f"{props['linewidth_fwhm']/1e3:.3f} kHz")
