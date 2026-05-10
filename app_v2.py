@@ -27,28 +27,6 @@ st.set_page_config(
 st.markdown(
     """
     <style>
-    html, body, [class*="css"], .stApp,
-    .stMarkdown, .stMetric, .stButton, .stTextInput, .stNumberInput,
-    .stSelectbox, .stSlider, .stRadio, .stCheckbox, .stCaption,
-    .stAlert, .stExpander, .stDataFrame, .stTable, .stTabs,
-    .stPlotlyChart, h1, h2, h3, h4, h5, h6, p, span, div, label, button,
-    [data-testid="stMetric"], [data-testid="stMetricLabel"],
-    [data-testid="stMetricValue"], [data-testid="stMetricDelta"] {
-        font-family: "DejaVu Sans", "Bitstream Vera Sans", sans-serif !important;
-    }
-    [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
-        font-weight: 700 !important;
-    }
-    [data-testid="stMetricValue"] {
-        font-size: 1.55rem !important;
-        line-height: 1.15 !important;
-    }
-    [data-baseweb="select"] *,
-    div[role="listbox"] *,
-    div[role="option"] * {
-        font-family: "Latin Modern Math", "STIX Two Math", "Cambria Math",
-            "Times New Roman", serif !important;
-    }
     .block-container {
         padding-top: 0.8rem !important;
         padding-bottom: 0.4rem !important;
@@ -309,7 +287,7 @@ def render_two_mirror_results():
 
         x_axis_mode = st.selectbox(
             "Transmission / reflection x-axis",
-            options=["Laser detuning 𝛥𝜈", "Cavity length 𝐿"],
+            options=["Laser detuning Δν", "Cavity length L"],
             index=0,
         )
 
@@ -363,7 +341,7 @@ def render_two_mirror_results():
     omega = 2.0 * np.pi * freqs
     tau_g = -np.gradient(phase_r, omega)
 
-    use_length_x = x_axis_mode == "Cavity length 𝐿"
+    use_length_x = x_axis_mode == "Cavity length L"
     if use_length_x:
         top_x = (L_scan - L) * 1e9
         top_T = T_lenscan_power
@@ -421,7 +399,6 @@ def render_two_mirror_results():
             dragmode="zoom",
             showlegend=False,
             margin=dict(l=35, r=20, t=65, b=35),
-            font=dict(family="DejaVu Sans"),
         )
         st.plotly_chart(fig_response, use_container_width=True)
 
