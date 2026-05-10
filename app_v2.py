@@ -39,6 +39,28 @@ st.markdown(
         min-height: 0rem;
         background: transparent;
     }
+    /* Compact slider + number_input rows for the dashboard controls */
+    [data-testid="stSlider"] {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-bottom: -0.6rem !important;
+    }
+    [data-testid="stSlider"] > label {
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        font-size: 0.85rem !important;
+    }
+    [data-testid="stNumberInput"] {
+        padding-top: 0 !important;
+        padding-bottom: 0 !important;
+        margin-bottom: -0.4rem !important;
+    }
+    [data-testid="stNumberInput"] input {
+        padding-top: 0.2rem !important;
+        padding-bottom: 0.2rem !important;
+        font-size: 0.85rem !important;
+    }
+    .synced-spacer { height: 1.45rem; }
     </style>
     """,
     unsafe_allow_html=True,
@@ -56,6 +78,95 @@ if "etalon_params" not in st.session_state:
 
 def go_to(page_name):
     st.session_state.page = page_name
+
+
+def synced_input(
+    label,
+    min_value,
+    max_value,
+    default,
+    step,
+    key_base,
+    fmt=None,
+    integer=False,
+    slider_ratio=3,
+    num_ratio=2,
+):
+    """
+    Render a slider and a number-input that share a value.
+
+    Both widgets stay in sync via on_change callbacks; the function returns
+    the current value as float (or int when ``integer=True``).
+    """
+    slider_key = f"{key_base}_slider"
+    num_key = f"{key_base}_num"
+
+    if integer:
+        cast = int
+    else:
+        cast = float
+
+    if slider_key not in st.session_state:
+        st.session_state[slider_key] = cast(default)
+    if num_key not in st.session_state:
+        st.session_state[num_key] = cast(default)
+
+    def _on_slider():
+        st.session_state[num_key] = st.session_state[slider_key]
+
+    def _on_num():
+        v = cast(st.session_state[num_key])
+        v = max(cast(min_value), min(cast(max_value), v))
+        st.session_state[slider_key] = v
+
+    cs, cn = st.columns([slider_ratio, num_ratio], gap="small")
+    with cs:
+        if integer:
+            st.slider(
+                label,
+                min_value=int(min_value),
+                max_value=int(max_value),
+                step=int(step),
+                key=slider_key,
+                on_change=_on_slider,
+            )
+        else:
+            st.slider(
+                label,
+                min_value=float(min_value),
+                max_value=float(max_value),
+                step=float(step),
+                format=fmt,
+                key=slider_key,
+                on_change=_on_slider,
+            )
+    with cn:
+        st.markdown(
+            '<div class="synced-spacer"></div>', unsafe_allow_html=True
+        )
+        if integer:
+            st.number_input(
+                label,
+                min_value=int(min_value),
+                max_value=int(max_value),
+                step=int(step),
+                key=num_key,
+                label_visibility="collapsed",
+                on_change=_on_num,
+            )
+        else:
+            st.number_input(
+                label,
+                min_value=float(min_value),
+                max_value=float(max_value),
+                step=float(step),
+                format=fmt,
+                key=num_key,
+                label_visibility="collapsed",
+                on_change=_on_num,
+            )
+
+    return st.session_state[slider_key]
 
 
 # --------------------------------------------------------------------
@@ -371,48 +482,33 @@ def render_two_mirror_results():
         st.rerun()
         return
 
-    control_col, plot_col, info_col = st.columns([0.7, 3.2, 1.0], gap="medium")
+    control_col, plot_col, info_col = st.columns([1.0, 3.0, 1.0], gap="medium")
 
     with control_col:
-        R1 = st.slider(
+        R1 = synced_input(
             "R₁ input mirror",
-            min_value=0.0,
-            max_value=0.999999,
-            value=float(p["R1"]),
-            step=1e-4,
-            format="%.6f",
+            0.0, 0.999999, float(p["R1"]),
+            1e-4, "tm_R1", fmt="%.6f",
         )
-        R2 = st.slider(
+        R2 = synced_input(
             "R₂ end mirror",
-            min_value=0.0,
-            max_value=0.999999,
-            value=float(min(p["R2"], 0.999999)),
-            step=1e-5,
-            format="%.6f",
+            0.0, 0.999999, float(min(p["R2"], 0.999999)),
+            1e-5, "tm_R2", fmt="%.6f",
         )
-        L = st.slider(
+        L = synced_input(
             "L cavity length [m]",
-            min_value=0.001,
-            max_value=3.0,
-            value=float(min(max(p["L"], 0.001), 3.0)),
-            step=0.001,
-            format="%.4f",
+            0.001, 3.0, float(min(max(p["L"], 0.001), 3.0)),
+            0.001, "tm_L", fmt="%.4f",
         )
-        Rc = st.slider(
+        Rc = synced_input(
             "ROC of R₂ [m]",
-            min_value=0.001,
-            max_value=5.0,
-            value=float(min(max(p["Rc"], 0.001), 5.0)),
-            step=0.001,
-            format="%.4f",
+            0.001, 5.0, float(min(max(p["Rc"], 0.001), 5.0)),
+            0.001, "tm_Rc", fmt="%.4f",
         )
-        eps = st.slider(
+        eps = synced_input(
             "ε round-trip loss",
-            min_value=0.0,
-            max_value=0.01,
-            value=float(min(max(p["eps"], 0.0), 0.01)),
-            step=1e-5,
-            format="%.5f",
+            0.0, 0.01, float(min(max(p["eps"], 0.0), 0.01)),
+            1e-5, "tm_eps", fmt="%.5f",
         )
 
         x_axis_mode = st.selectbox(
@@ -798,81 +894,56 @@ def render_etalon_results():
         st.rerun()
         return
 
-    control_col, plot_col, info_col = st.columns([0.7, 3.2, 1.0], gap="medium")
+    control_col, plot_col, info_col = st.columns([1.0, 3.0, 1.0], gap="small")
 
     with control_col:
         st.markdown("##### Optical")
-        L1_mm = st.slider(
+        L1_mm = synced_input(
             "L₁ [mm]",
-            min_value=0.1,
-            max_value=50.0,
-            value=float(min(max(p["L1_mm"], 0.1), 50.0)),
-            step=0.01,
-            format="%.4f",
+            0.1, 50.0, float(min(max(p["L1_mm"], 0.1), 50.0)),
+            0.01, "et_L1mm", fmt="%.4f",
         )
-        L2 = st.slider(
+        L2 = synced_input(
             "L₂ [m]",
-            min_value=0.01,
-            max_value=3.0,
-            value=float(min(max(p["L2"], 0.01), 3.0)),
-            step=0.001,
-            format="%.4f",
+            0.01, 3.0, float(min(max(p["L2"], 0.01), 3.0)),
+            0.001, "et_L2", fmt="%.4f",
         )
-        R1 = st.slider(
+        R1 = synced_input(
             "R₁ etalon front",
-            min_value=0.0,
-            max_value=0.999999,
-            value=float(min(max(p["R1"], 0.0), 0.999999)),
-            step=1e-4,
-            format="%.6f",
+            0.0, 0.999999, float(min(max(p["R1"], 0.0), 0.999999)),
+            1e-4, "et_R1", fmt="%.6f",
         )
-        R2 = st.slider(
+        R2 = synced_input(
             "R₂ etalon back",
-            min_value=0.0,
-            max_value=0.999999,
-            value=float(min(max(p["R2"], 0.0), 0.999999)),
-            step=1e-4,
-            format="%.6f",
+            0.0, 0.999999, float(min(max(p["R2"], 0.0), 0.999999)),
+            1e-4, "et_R2", fmt="%.6f",
         )
-        R3 = st.slider(
+        R3 = synced_input(
             "R₃ end mirror",
-            min_value=0.5,
-            max_value=0.9999999,
-            value=float(min(max(p["R3"], 0.5), 0.9999999)),
-            step=1e-5,
-            format="%.7f",
+            0.5, 0.9999999, float(min(max(p["R3"], 0.5), 0.9999999)),
+            1e-5, "et_R3", fmt="%.7f",
         )
-        Rc = st.slider(
+        Rc = synced_input(
             "ROC of R₃ [m]",
-            min_value=0.01,
-            max_value=5.0,
-            value=float(min(max(p["Rc"], 0.01), 5.0)),
-            step=0.001,
-            format="%.4f",
+            0.01, 5.0, float(min(max(p["Rc"], 0.01), 5.0)),
+            0.001, "et_Rc", fmt="%.4f",
         )
-        eps = st.slider(
+        eps = synced_input(
             "ε round-trip loss",
-            min_value=0.0,
-            max_value=0.01,
-            value=float(min(max(p["eps"], 0.0), 0.01)),
-            step=1e-5,
-            format="%.5f",
+            0.0, 0.01, float(min(max(p["eps"], 0.0), 0.01)),
+            1e-5, "et_eps", fmt="%.5f",
         )
 
         st.markdown("##### Substrate")
-        n_substrate = st.slider(
+        n_substrate = synced_input(
             "n",
-            min_value=1.0,
-            max_value=4.0,
-            value=float(min(max(p["n"], 1.0), 4.0)),
-            step=0.01,
+            1.0, 4.0, float(min(max(p["n"], 1.0), 4.0)),
+            0.01, "et_n", fmt="%.4f",
         )
-        alpha_ppm = st.slider(
+        alpha_ppm = synced_input(
             "dL₁/dT [ppm/K]",
-            min_value=0.0,
-            max_value=100.0,
-            value=float(min(max(p["alpha_ppm"], 0.0), 100.0)),
-            step=0.01,
+            0.0, 100.0, float(min(max(p["alpha_ppm"], 0.0), 100.0)),
+            0.01, "et_alpha", fmt="%.4f",
         )
         dn_dT_val = st.number_input(
             "dn/dT [1/K]",
@@ -881,19 +952,15 @@ def render_etalon_results():
         )
 
         st.markdown("##### Thermal scan")
-        dT_max = st.slider(
+        dT_max = synced_input(
             "ΔTₘₐₓ [°C]",
-            min_value=0.0,
-            max_value=100.0,
-            value=float(min(max(p["dT_max"], 0.0), 100.0)),
-            step=0.5,
+            0.0, 100.0, float(min(max(p["dT_max"], 0.0), 100.0)),
+            0.5, "et_dTmax", fmt="%.2f",
         )
-        N_samples = st.number_input(
+        N_samples = synced_input(
             "# T samples",
-            min_value=1,
-            max_value=30,
-            value=int(p["N_samples"]),
-            step=1,
+            1, 30, int(p["N_samples"]),
+            1, "et_Nsamples", integer=True,
         )
 
         x_axis_mode = st.selectbox(
