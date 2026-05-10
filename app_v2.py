@@ -259,9 +259,9 @@ def etalon_coeffs(r1, r2, t1, t2, k_val, n_substrate, d):
     exp_i_delta = np.exp(1j * delta)
     denom = 1.0 - r1 * r2 * exp_i_delta
     t_et = t1 * t2 * np.exp(1j * delta / 2.0) / denom
-    r_et_L = r1 + (t1**2 * r2 * exp_i_delta) / denom
+    r_et_L = -r1 + (t1**2 * r2 * exp_i_delta) / denom
     r_et_R = r2 + (t2**2 * r1 * exp_i_delta) / denom
-    return t_et, r_et_L, r_et_R
+    return t_et, r_et_L, r_er_R
 
 
 def three_surface_response(freqs, R1, R2, R3, L1, L2, n_substrate):
@@ -1068,11 +1068,16 @@ def render_etalon_results():
 
     L_span = lambda0
     L_scan = np.linspace(L2 - L_span / 2.0, L2 + L_span / 2.0, N)
-    r_lenscan, t_lenscan = three_surface_length_scan(
-        L_scan, R1, R2, R3, L1, n_substrate
-    )
-    T_lenscan = np.abs(t_lenscan) ** 2
-    R_lenscan = np.abs(r_lenscan) ** 2
+    len_curves = []
+    for dT in delta_T_arr:
+        L1_T = L1 + dL1_dT_geom * dT
+        n_T = n_substrate + dn_dT_val * dT
+        r_lenscan_T, t_lenscan_T = three_surface_length_scan(
+            L_scan, R1, R2, R3, L1_T, n_T
+        )
+        T_lenscan_T = np.abs(t_lenscan_T) ** 2
+        R_lenscan_T = np.abs(r_lenscan_T) ** 2
+        len_curves.append((dT, T_lenscan_T, R_lenscan_T))
 
     props = etalon_properties(
         L1, L2, R1, R2, R3, Rc, eps, n_substrate, alpha_ppm, dn_dT_val
@@ -1102,16 +1107,27 @@ def render_etalon_results():
         )
 
         if use_length_x:
-            fig_response.add_trace(
-                go.Scatter(x=top_x, y=T_lenscan, mode="lines", name="Transmission"),
-                row=1,
-                col=1,
-            )
-            fig_response.add_trace(
-                go.Scatter(x=top_x, y=R_lenscan, mode="lines", name="Reflection"),
-                row=1,
-                col=2,
-            )
+            for dT, T_lenscan_T, R_lenscan_T in len_curves:
+                fig_response.add_trace(
+                    go.Scatter(
+                        x=top_x,
+                        y=T_lenscan_T,
+                        mode="lines",
+                        name=f"ΔT={dT:.1f} °C",
+                    ),
+                    row=1,
+                    col=1,
+                )
+                fig_response.add_trace(
+                    go.Scatter(
+                        x=top_x,
+                        y=R_lenscan_T,
+                        mode="lines",
+                        showlegend=False,
+                    ),
+                    row=1,
+                    col=2,
+                )
         else:
             for dT, T_T, R_T, _, _ in temp_curves:
                 fig_response.add_trace(
@@ -1160,7 +1176,7 @@ def render_etalon_results():
         fig_response.update_layout(
             height=650,
             dragmode="zoom",
-            showlegend=(not use_length_x),
+            showlegend=True,
             legend=dict(orientation="v", x=1.02, y=1.0, font=dict(size=10)),
             margin=dict(l=35, r=20, t=65, b=35),
         )
