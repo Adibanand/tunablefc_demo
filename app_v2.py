@@ -261,7 +261,7 @@ def etalon_coeffs(r1, r2, t1, t2, k_val, n_substrate, d):
     t_et = t1 * t2 * np.exp(1j * delta / 2.0) / denom
     r_et_L = -r1 + (t1**2 * r2 * exp_i_delta) / denom
     r_et_R = r2 + (t2**2 * r1 * exp_i_delta) / denom
-    return t_et, r_et_L, r_er_R
+    return t_et, r_et_L, r_et_R
 
 
 def three_surface_response(freqs, R1, R2, R3, L1, L2, n_substrate):
@@ -790,98 +790,107 @@ def render_etalon_params():
 
     with col_input:
         st.markdown("### Optical parameters")
-        L1_mm = st.number_input(
-            "L₁ — etalon substrate thickness [mm]",
-            min_value=0.001,
-            max_value=50.0,
-            value=float(_ep("L1_mm")),
-            step=0.01,
-            format="%.4f",
-        )
-        L2 = st.number_input(
-            "L₂ — long cavity length [m]",
-            min_value=0.001,
-            max_value=10.0,
-            value=float(_ep("L2")),
-            step=0.001,
-            format="%.4f",
-        )
-        R1 = st.number_input(
-            "R₁ — etalon front surface reflectivity",
-            min_value=0.0,
-            max_value=0.999999,
-            value=float(_ep("R1")),
-            step=1e-4,
-            format="%.6f",
-        )
-        R2 = st.number_input(
-            "R₂ — etalon back surface reflectivity",
-            min_value=0.0,
-            max_value=0.999999,
-            value=float(_ep("R2")),
-            step=1e-4,
-            format="%.6f",
-        )
-        R3 = st.number_input(
-            "R₃ — end mirror reflectivity",
-            min_value=0.5,
-            max_value=0.9999999,
-            value=float(_ep("R3")),
-            step=1e-5,
-            format="%.7f",
-        )
-        Rc = st.number_input(
-            "ROC of R₃ — radius of curvature [m]",
-            min_value=0.001,
-            max_value=1.0e5,
-            value=float(_ep("Rc")),
-            step=0.001,
-            format="%.4f",
-        )
-        eps = st.number_input(
-            "ε — round-trip cavity loss",
-            min_value=0.0,
-            max_value=0.1,
-            value=float(_ep("eps")),
-            format="%.2e",
-        )
+        opt_a, opt_b = st.columns(2, gap="small")
+        with opt_a:
+            L1_mm = st.number_input(
+                "L₁ — substrate thickness [mm]",
+                min_value=0.001,
+                max_value=50.0,
+                value=float(_ep("L1_mm")),
+                step=0.01,
+                format="%.4f",
+            )
+            R1 = st.number_input(
+                "R₁ — etalon front",
+                min_value=0.0,
+                max_value=0.999999,
+                value=float(_ep("R1")),
+                step=1e-4,
+                format="%.6f",
+            )
+            R3 = st.number_input(
+                "R₃ — end mirror",
+                min_value=0.5,
+                max_value=0.9999999,
+                value=float(_ep("R3")),
+                step=1e-5,
+                format="%.7f",
+            )
+            eps = st.number_input(
+                "ε — round-trip loss",
+                min_value=0.0,
+                max_value=0.1,
+                value=float(_ep("eps")),
+                format="%.2e",
+            )
+        with opt_b:
+            L2 = st.number_input(
+                "L₂ — long cavity length [m]",
+                min_value=0.001,
+                max_value=10.0,
+                value=float(_ep("L2")),
+                step=0.001,
+                format="%.4f",
+            )
+            R2 = st.number_input(
+                "R₂ — etalon back",
+                min_value=0.0,
+                max_value=0.999999,
+                value=float(_ep("R2")),
+                step=1e-4,
+                format="%.6f",
+            )
+            Rc = st.number_input(
+                "ROC of R₃ [m]",
+                min_value=0.001,
+                max_value=1.0e5,
+                value=float(_ep("Rc")),
+                step=0.001,
+                format="%.4f",
+            )
 
         st.markdown("### Etalon substrate properties")
-        n_substrate = st.number_input(
-            "n — substrate refractive index",
-            min_value=1.0,
-            max_value=4.0,
-            value=float(_ep("n")),
-            step=0.01,
-        )
-        alpha_ppm = st.number_input(
-            "dL₁/dT [ppm/K] — effective tunability",
-            min_value=0.0,
-            max_value=100.0,
-            value=float(_ep("alpha_ppm")),
-            step=0.01,
-        )
-        dn_dT_val = st.number_input(
-            "dn/dT [1/K] — thermo-optic coefficient",
-            value=float(_ep("dn_dT")),
-            format="%.2e",
-        )
+        sub_a, sub_b = st.columns(2, gap="small")
+        with sub_a:
+            n_substrate = st.number_input(
+                "n — refractive index",
+                min_value=1.0,
+                max_value=4.0,
+                value=float(_ep("n")),
+                step=0.01,
+            )
+            dn_dT_val = st.number_input(
+                "dn/dT [1/K]",
+                value=float(_ep("dn_dT")),
+                format="%.2e",
+            )
+        with sub_b:
+            alpha_ppm = st.number_input(
+                "dL₁/dT [ppm/K]",
+                min_value=0.0,
+                max_value=100.0,
+                value=float(_ep("alpha_ppm")),
+                step=0.01,
+            )
 
         st.markdown("### Thermal scan")
-        dT_max = st.number_input(
-            "Maximum temperature excursion ΔTₘₐₓ [°C]",
-            min_value=0.0,
-            max_value=1000.0,
-            value=float(_ep("dT_max")),
-            step=0.5,
-        )
-        N_samples = st.number_input(
-            "Number of temperature samples",
-            min_value=1,
-            max_value=30,
-            value=int(_ep("N_samples")),
-            step=1,
-        )
+        ts_a, ts_b = st.columns(2, gap="small")
+        with ts_a:
+            dT_max = st.number_input(
+                "ΔTₘₐₓ [°C]",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(_ep("dT_max")),
+                step=0.5,
+            )
+        with ts_b:
+            N_samples = st.number_input(
+                "# T samples",
+                min_value=1,
+                max_value=30,
+                value=int(_ep("N_samples")),
+                step=1,
+            )
 
     st.markdown("---")
     cnav1, cnav2 = st.columns([1, 1])
