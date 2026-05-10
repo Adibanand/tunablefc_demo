@@ -39,11 +39,21 @@ st.markdown(
     [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
         font-weight: 700 !important;
     }
+    [data-testid="stMetricValue"] {
+        font-size: 1.55rem !important;
+        line-height: 1.15 !important;
+    }
+    [data-baseweb="select"] *,
+    div[role="listbox"] *,
+    div[role="option"] * {
+        font-family: "Latin Modern Math", "STIX Two Math", "Cambria Math",
+            "Times New Roman", serif !important;
+    }
     .block-container {
-        padding-top: 0.4rem !important;
+        padding-top: 0.8rem !important;
         padding-bottom: 0.4rem !important;
-        padding-left: 0.6rem !important;
-        padding-right: 0.6rem !important;
+        padding-left: 1.0rem !important;
+        padding-right: 1.0rem !important;
         max-width: 100% !important;
     }
     header[data-testid="stHeader"] {
@@ -299,7 +309,7 @@ def render_two_mirror_results():
 
         x_axis_mode = st.selectbox(
             "Transmission / reflection x-axis",
-            options=["Laser detuning Δν", "Cavity length L"],
+            options=["Laser detuning 𝛥𝜈", "Cavity length 𝐿"],
             index=0,
         )
 
@@ -353,7 +363,7 @@ def render_two_mirror_results():
     omega = 2.0 * np.pi * freqs
     tau_g = -np.gradient(phase_r, omega)
 
-    use_length_x = x_axis_mode == "Cavity length L"
+    use_length_x = x_axis_mode == "Cavity length 𝐿"
     if use_length_x:
         top_x = (L_scan - L) * 1e9
         top_T = T_lenscan_power
