@@ -39,6 +39,18 @@ st.markdown(
     [data-testid="stMetricLabel"], [data-testid="stMetricLabel"] * {
         font-weight: 700 !important;
     }
+    .block-container {
+        padding-top: 0.4rem !important;
+        padding-bottom: 0.4rem !important;
+        padding-left: 0.6rem !important;
+        padding-right: 0.6rem !important;
+        max-width: 100% !important;
+    }
+    header[data-testid="stHeader"] {
+        height: 0rem;
+        min-height: 0rem;
+        background: transparent;
+    }
     </style>
     """,
     unsafe_allow_html=True,
