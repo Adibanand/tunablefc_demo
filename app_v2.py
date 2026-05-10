@@ -221,13 +221,77 @@ def render_two_mirror_results():
         st.rerun()
         return
 
-    R1, R2, L, Rc, eps = p["R1"], p["R2"], p["L"], p["Rc"], p["eps"]
+    st.title("Two-mirror cavity dashboard")
+    st.caption("Tune the cavity inputs on the left; plots and properties update automatically.")
 
-    st.title("Two-mirror cavity — results")
-    st.caption(
-        f"R₁ = {R1:.6f}   R₂ = {R2:.7f}   L = {L:.4f} m   "
-        f"ROC = {Rc:.4f} m   ε = {eps:.2e}"
-    )
+    control_col, plot_col, info_col = st.columns([0.9, 2.2, 1.1], gap="medium")
+
+    with control_col:
+        st.markdown("### Tune inputs")
+        st.caption(f"Selected cavity: {st.session_state.geometry}")
+
+        R1 = st.slider(
+            "R₁ input mirror",
+            min_value=0.0,
+            max_value=0.999999,
+            value=float(p["R1"]),
+            step=1e-4,
+            format="%.6f",
+        )
+        R2 = st.slider(
+            "R₂ end mirror",
+            min_value=0.0,
+            max_value=0.999999,
+            value=float(min(p["R2"], 0.999999)),
+            step=1e-5,
+            format="%.6f",
+        )
+        L = st.slider(
+            "L cavity length [m]",
+            min_value=0.001,
+            max_value=3.0,
+            value=float(min(max(p["L"], 0.001), 3.0)),
+            step=0.001,
+            format="%.4f",
+        )
+        Rc = st.slider(
+            "ROC of R₂ [m]",
+            min_value=0.001,
+            max_value=5.0,
+            value=float(min(max(p["Rc"], 0.001), 5.0)),
+            step=0.001,
+            format="%.4f",
+        )
+        eps = st.slider(
+            "ε round-trip loss",
+            min_value=0.0,
+            max_value=0.01,
+            value=float(min(max(p["eps"], 0.0), 0.01)),
+            step=1e-5,
+            format="%.5f",
+        )
+
+        x_axis_mode = st.selectbox(
+            "Transmission / reflection x-axis",
+            options=["Laser detuning Δν", "Cavity length L"],
+            index=0,
+        )
+
+        st.session_state.two_mirror_params = {
+            "R1": R1,
+            "R2": R2,
+            "L": L,
+            "Rc": Rc,
+            "eps": eps,
+        }
+
+        st.markdown("---")
+        if st.button("Edit full parameter page"):
+            go_to("two_mirror_params")
+            st.rerun()
+        if st.button("Start over"):
+            go_to("landing")
+            st.rerun()
 
     # Frequency grid
     FSR_Hz = c / (2.0 * L)
@@ -240,125 +304,135 @@ def render_two_mirror_results():
     T_power = np.abs(t_tot) ** 2
     R_power = np.abs(r_tot) ** 2
 
+    # Length-scan equivalent: span ±λ0/2 around L gives the same round-trip
+    # phase range as the detuning scan over 2 FSR at fixed wavelength.
+    L_span = lambda0
+    L_scan = np.linspace(L - L_span / 2.0, L + L_span / 2.0, N)
+    k0 = 2.0 * np.pi * f0 / c
+    e_rt_L = np.exp(2j * k0 * L_scan)
+    e_one_L = np.exp(1j * k0 * L_scan)
+    r1_a, r2_a = np.sqrt(R1), np.sqrt(R2)
+    t1_a, t2_a = np.sqrt(1.0 - R1), np.sqrt(1.0 - R2)
+    a_loss = np.sqrt(1.0 - eps)
+    denom_L = 1.0 - r1_a * r2_a * a_loss * e_rt_L
+    t_lenscan = t1_a * t2_a * np.sqrt(a_loss) * e_one_L / denom_L
+    r_lenscan = -r1_a + (t1_a**2 * r2_a * a_loss * e_rt_L) / denom_L
+    T_lenscan_power = np.abs(t_lenscan) ** 2
+    R_lenscan_power = np.abs(r_lenscan) ** 2
+
     props = two_mirror_properties(R1, R2, L, Rc, eps)
 
-    tab_T, tab_phase, tab_props, tab_math = st.tabs(
-        ["Transmission", "Phase response", "Cavity properties", "Derivations"]
-    )
+    x_MHz = dnu * 1e-6
+    phase_r = np.unwrap(np.angle(r_tot))
+    omega = 2.0 * np.pi * freqs
+    tau_g = -np.gradient(phase_r, omega)
 
-    # ---------- Transmission tab ----------
-    with tab_T:
-        st.subheader("Power transmission")
-        x_MHz = dnu * 1e-6
+    use_length_x = x_axis_mode == "Cavity length L"
+    if use_length_x:
+        top_x = L_scan * 1e6
+        top_T = T_lenscan_power
+        top_R = R_lenscan_power
+        top_x_title = "Cavity length L [µm]"
+    else:
+        top_x = x_MHz
+        top_T = T_power
+        top_R = R_power
+        top_x_title = "Δν [MHz]"
 
-        fig_T = go.Figure()
-        fig_T.add_trace(
-            go.Scatter(x=x_MHz, y=T_power, mode="lines", name="|t_tot|²")
-        )
-        fig_T.update_layout(
-            xaxis_title="Frequency detuning Δν [MHz]",
-            yaxis_title="Transmitted power [arb.]",
-            yaxis_type="log",
-            dragmode="zoom",
-            yaxis=dict(fixedrange=True),
-        )
-        st.plotly_chart(fig_T, use_container_width=True)
-
-        st.subheader("Power reflection")
-        fig_R = go.Figure()
-        fig_R.add_trace(
-            go.Scatter(x=x_MHz, y=R_power, mode="lines", name="|r_tot|²")
-        )
-        fig_R.update_layout(
-            xaxis_title="Frequency detuning Δν [MHz]",
-            yaxis_title="Reflected power [arb.]",
-            dragmode="zoom",
-            yaxis=dict(fixedrange=True),
-        )
-        st.plotly_chart(fig_R, use_container_width=True)
-
-    # ---------- Phase tab ----------
-    with tab_phase:
-        st.subheader("Reflection phase and group delay")
-        x_MHz = dnu * 1e-6
-        phase_r = np.unwrap(np.angle(r_tot))
-        omega = 2.0 * np.pi * freqs
-        tau_g = -np.gradient(phase_r, omega)
-
-        fig_phase = make_subplots(
-            rows=1,
+    with plot_col:
+        st.markdown("### Cavity response")
+        fig_response = make_subplots(
+            rows=2,
             cols=2,
             subplot_titles=(
-                "Reflection phase vs frequency detuning",
-                "Group delay vs frequency detuning",
+                f"Power transmission vs {('cavity length' if use_length_x else 'detuning')}",
+                f"Power reflection vs {('cavity length' if use_length_x else 'detuning')}",
+                "Reflection phase vs detuning",
+                "Group delay vs detuning",
             ),
             horizontal_spacing=0.12,
+            vertical_spacing=0.22,
         )
-        fig_phase.add_trace(
-            go.Scatter(x=x_MHz, y=phase_r, mode="lines", name="arg r_tot"),
+        fig_response.add_trace(
+            go.Scatter(x=top_x, y=top_T, mode="lines", name="Transmission"),
             row=1,
             col=1,
         )
-        fig_phase.add_trace(
-            go.Scatter(x=x_MHz, y=tau_g, mode="lines", name="τ_g"),
+        fig_response.add_trace(
+            go.Scatter(x=top_x, y=top_R, mode="lines", name="Reflection"),
             row=1,
             col=2,
         )
-        fig_phase.update_xaxes(title_text="Δν [MHz]", row=1, col=1)
-        fig_phase.update_xaxes(title_text="Δν [MHz]", row=1, col=2)
-        fig_phase.update_yaxes(title_text="Phase [rad]", row=1, col=1, fixedrange=True)
-        fig_phase.update_yaxes(title_text="Group delay [s]", row=1, col=2, fixedrange=True)
-        fig_phase.update_layout(height=460, dragmode="zoom", showlegend=False)
-        st.plotly_chart(fig_phase, use_container_width=True)
+        fig_response.add_trace(
+            go.Scatter(x=x_MHz, y=phase_r, mode="lines", name="Phase"),
+            row=2,
+            col=1,
+        )
+        fig_response.add_trace(
+            go.Scatter(x=x_MHz, y=tau_g, mode="lines", name="Group delay"),
+            row=2,
+            col=2,
+        )
+        fig_response.update_xaxes(title_text=top_x_title, row=1, col=1)
+        fig_response.update_xaxes(title_text=top_x_title, row=1, col=2)
+        fig_response.update_xaxes(title_text="Δν [MHz]", row=2, col=1)
+        fig_response.update_xaxes(title_text="Δν [MHz]", row=2, col=2)
+        fig_response.update_yaxes(title_text="Power", type="log", row=1, col=1, fixedrange=True)
+        fig_response.update_yaxes(title_text="Power", row=1, col=2, fixedrange=True)
+        fig_response.update_yaxes(title_text="rad", row=2, col=1, fixedrange=True)
+        fig_response.update_yaxes(title_text="s", row=2, col=2, fixedrange=True)
+        fig_response.update_layout(
+            height=650,
+            dragmode="zoom",
+            showlegend=False,
+            margin=dict(l=35, r=20, t=65, b=35),
+        )
+        st.plotly_chart(fig_response, use_container_width=True)
 
-    # ---------- Cavity properties tab ----------
-    with tab_props:
-        st.subheader("Cavity properties")
+    with info_col:
+        st.markdown("### Cavity geometry")
+        diagram_path = "planoconcavecavity.png"
+        if os.path.exists(diagram_path):
+            st.image(diagram_path, use_container_width=True)
+        else:
+            st.info("Cavity diagram image not found.")
 
-        col_a, col_b = st.columns(2)
-        with col_a:
-            st.metric("Free spectral range (FSR)", f"{props['FSR']/1e6:.3f} MHz")
-            st.metric("Cavity pole γ (HWHM)", f"{props['gamma_hwhm']/1e3:.3f} kHz")
-            st.metric("Cavity linewidth (FWHM)", f"{props['linewidth_fwhm']/1e3:.3f} kHz")
-            st.metric("Finesse", f"{props['finesse']:.1f}")
-        with col_b:
-            st.metric("g₁", f"{props['g1']:.4f}")
-            st.metric("g₂", f"{props['g2']:.4f}")
-            st.metric("g₁·g₂", f"{props['g_prod']:.4f}")
-            if np.isfinite(props["tm_spacing"]):
-                st.metric(
-                    "Transverse mode spacing Δν⊥",
-                    f"{props['tm_spacing']/1e6:.3f} MHz",
-                )
-            else:
-                st.metric("Transverse mode spacing Δν⊥", "—")
-
-        st.markdown("---")
+        st.markdown("### Cavity properties")
+        st.metric("FSR", f"{props['FSR']/1e6:.3f} MHz")
+        st.metric("Linewidth (FWHM)", f"{props['linewidth_fwhm']/1e3:.3f} kHz")
+        st.metric("Finesse", f"{props['finesse']:.1f}")
+        if np.isfinite(props["tm_spacing"]):
+            st.metric("Transverse spacing", f"{props['tm_spacing']/1e6:.3f} MHz")
+        else:
+            st.metric("Transverse spacing", "—")
 
         if props["is_stable"]:
-            st.success("Cavity is geometrically stable (0 < g₁·g₂ < 1).")
+            st.success("Stable: 0 < g₁·g₂ < 1")
         else:
-            st.error("Cavity is not geometrically stable (g₁·g₂ outside (0, 1)).")
+            st.error("Unstable: g₁·g₂ outside (0, 1)")
 
         if np.isfinite(props["tm_spacing"]):
             ratio = props["tm_spacing"] / props["linewidth_fwhm"]
             if ratio >= 5.0:
-                st.success(
-                    f"Transverse mode spacing / linewidth = **{ratio:.2f}** "
-                    "(≥ 5, well separated)."
-                )
+                st.success(f"HOM spacing / linewidth = {ratio:.2f} (≥ 5)")
             else:
-                st.warning(
-                    f"Transverse mode spacing / linewidth = **{ratio:.2f}** "
-                    "(< 5, transverse modes not well separated)."
-                )
+                st.warning(f"HOM spacing / linewidth = {ratio:.2f} (< 5)")
         else:
-            st.warning(
-                "Transverse mode spacing is not real-valued; skipping HOM-to-linewidth check."
-            )
+            st.warning("HOM spacing check unavailable.")
 
-    # ---------- Derivations tab ----------
-    with tab_math:
+        st.markdown("### Selected parameters")
+        st.markdown(
+            f"""
+- R₁: **{R1:.6f}**
+- R₂: **{R2:.6f}**
+- L: **{L:.4f} m**
+- ROC R₂: **{Rc:.4f} m**
+- ε: **{eps:.5f}**
+- g₁·g₂: **{props['g_prod']:.4f}**
+"""
+        )
+
+    with st.expander("Derivations and definitions", expanded=False):
         st.subheader("Derivations and definitions")
 
         st.markdown("#### Field model")
@@ -412,18 +486,6 @@ g_1 = 1, \qquad g_2 = 1 - \frac{L}{R_c}, \qquad 0 < g_1 g_2 < 1
         st.markdown("#### Reflection phase and group delay")
         st.latex(r"\phi(f) = \arg\,r_{\mathrm{tot}}(f)")
         st.latex(r"\tau_g(f) = -\frac{d\phi}{d\omega}")
-
-    # ---------- Navigation ----------
-    st.markdown("---")
-    cnav1, cnav2 = st.columns([1, 1])
-    with cnav1:
-        if st.button("← Edit parameters"):
-            go_to("two_mirror_params")
-            st.rerun()
-    with cnav2:
-        if st.button("⌂ Start over"):
-            go_to("landing")
-            st.rerun()
 
 
 # --------------------------------------------------------------------
