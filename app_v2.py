@@ -138,7 +138,7 @@ def render_two_mirror_params():
 
     with col_diag:
         st.markdown("### Cavity diagram")
-        diagram_path = "planoconcavecavity.png"
+        diagram_path = "twomirrorcavity.jpg"
         if os.path.exists(diagram_path):
             st.image(diagram_path, caption="Plano–concave two-mirror cavity")
         else:
@@ -406,17 +406,9 @@ def render_two_mirror_results():
         else:
             st.warning("HOM spacing check unavailable.")
 
-        st.markdown("### Selected parameters")
-        st.markdown(
-            f"""
-- R₁: **{R1:.6f}**
-- R₂: **{R2:.6f}**
-- L: **{L:.4f} m**
-- ROC R₂: **{Rc:.4f} m**
-- ε: **{eps:.5f}**
-- g₁·g₂: **{props['g_prod']:.4f}**
-"""
-        )
+        diagram_path = "twomirrorcavity.jpg"
+        if os.path.exists(diagram_path):
+            st.image(diagram_path, use_container_width=True)
 
     with st.expander("Derivations and definitions", expanded=False):
         st.subheader("Derivations and definitions")
