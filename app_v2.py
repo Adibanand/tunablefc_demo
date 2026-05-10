@@ -61,6 +61,33 @@ st.markdown(
         font-size: 0.85rem !important;
     }
     .synced-spacer { height: 1.45rem; }
+    /* Mini-controls used in the right info column for the thermal scan */
+    .mini-controls [data-testid="stNumberInput"] input {
+        font-size: 0.72rem !important;
+        padding-top: 0.1rem !important;
+        padding-bottom: 0.1rem !important;
+    }
+    .mini-controls [data-testid="stNumberInput"] label,
+    .mini-controls label {
+        font-size: 0.72rem !important;
+        margin-bottom: 0 !important;
+    }
+    .mini-controls h6, .mini-controls .mini-title {
+        font-size: 0.78rem !important;
+        font-weight: 700 !important;
+        margin: 0 0 0.15rem 0 !important;
+    }
+    /* Compact selectbox used inline above the plots */
+    .inline-xaxis [data-testid="stSelectbox"] {
+        margin-bottom: -0.2rem !important;
+    }
+    .inline-xaxis [data-testid="stSelectbox"] label {
+        font-size: 0.78rem !important;
+        margin-bottom: 0 !important;
+    }
+    .inline-xaxis [data-baseweb="select"] {
+        font-size: 0.8rem !important;
+    }
     </style>
     """,
     unsafe_allow_html=True,
@@ -755,7 +782,7 @@ def render_etalon_params():
     col_diag, col_input = st.columns([1, 1])
 
     with col_diag:
-        diagram_path = "tunablefc_drawing.png"
+        diagram_path = "etalonmirrorcavity.jpg"
         if os.path.exists(diagram_path):
             st.image(diagram_path, caption="Etalon + concave end-mirror cavity")
         else:
@@ -951,39 +978,6 @@ def render_etalon_results():
             format="%.2e",
         )
 
-        st.markdown("##### Thermal scan")
-        dT_max = synced_input(
-            "ΔTₘₐₓ [°C]",
-            0.0, 100.0, float(min(max(p["dT_max"], 0.0), 100.0)),
-            0.5, "et_dTmax", fmt="%.2f",
-        )
-        N_samples = synced_input(
-            "# T samples",
-            1, 30, int(p["N_samples"]),
-            1, "et_Nsamples", integer=True,
-        )
-
-        x_axis_mode = st.selectbox(
-            "Transmission / reflection x-axis",
-            options=["Laser detuning Δν", "Cavity length L₂"],
-            index=0,
-        )
-
-        st.session_state.etalon_params = {
-            "L1_mm": L1_mm,
-            "L2": L2,
-            "R1": R1,
-            "R2": R2,
-            "R3": R3,
-            "Rc": Rc,
-            "eps": eps,
-            "n": n_substrate,
-            "alpha_ppm": alpha_ppm,
-            "dn_dT": dn_dT_val,
-            "dT_max": dT_max,
-            "N_samples": int(N_samples),
-        }
-
         st.markdown("---")
         if st.button("Edit full parameter page"):
             go_to("etalon_params")
@@ -991,6 +985,58 @@ def render_etalon_results():
         if st.button("Start over"):
             go_to("landing")
             st.rerun()
+
+    with info_col:
+        st.markdown(
+            '<div class="mini-controls">'
+            '<div class="mini-title">Thermal scan</div>',
+            unsafe_allow_html=True,
+        )
+        col_dT, col_N = st.columns(2, gap="small")
+        with col_dT:
+            dT_max = st.number_input(
+                "ΔTₘₐₓ [°C]",
+                min_value=0.0,
+                max_value=1000.0,
+                value=float(p["dT_max"]),
+                step=0.5,
+                format="%.2f",
+                key="et_dTmax_mini",
+            )
+        with col_N:
+            N_samples = st.number_input(
+                "# T samples",
+                min_value=1,
+                max_value=30,
+                value=int(p["N_samples"]),
+                step=1,
+                key="et_Nsamples_mini",
+            )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    with plot_col:
+        st.markdown('<div class="inline-xaxis">', unsafe_allow_html=True)
+        x_axis_mode = st.selectbox(
+            "Transmission / reflection x-axis",
+            options=["Laser detuning Δν", "Cavity length L₂"],
+            index=0,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.session_state.etalon_params = {
+        "L1_mm": L1_mm,
+        "L2": L2,
+        "R1": R1,
+        "R2": R2,
+        "R3": R3,
+        "Rc": Rc,
+        "eps": eps,
+        "n": n_substrate,
+        "alpha_ppm": alpha_ppm,
+        "dn_dT": dn_dT_val,
+        "dT_max": dT_max,
+        "N_samples": int(N_samples),
+    }
 
     L1 = L1_mm * 1e-3
     alpha = alpha_ppm * 1e-6
