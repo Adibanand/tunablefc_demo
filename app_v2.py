@@ -24,6 +24,44 @@ st.set_page_config(
     layout="wide",
 )
 
+st.markdown(
+    """
+    <style>
+    html, body, [class*="css"], .stApp,
+    .stMarkdown, .stMetric, .stButton, .stTextInput, .stNumberInput,
+    .stSelectbox, .stSlider, .stRadio, .stCheckbox, .stCaption,
+    .stAlert, .stExpander, .stDataFrame, .stTable, .stTabs,
+    .stPlotlyChart, h1, h2, h3, h4, h5, h6, p, span, div, label, button {
+        font-family: "DejaVu Sans", "Bitstream Vera Sans", sans-serif !important;
+    }
+    .block-container {
+        padding-top: 0.6rem !important;
+        padding-bottom: 0.4rem !important;
+        padding-left: 1.2rem !important;
+        padding-right: 1.2rem !important;
+    }
+    [data-testid="stMetric"] {
+        margin-bottom: -0.4rem !important;
+    }
+    [data-testid="stMetricLabel"] {
+        font-size: 0.78rem !important;
+    }
+    [data-testid="stMetricValue"] {
+        font-size: 1.0rem !important;
+    }
+    .stAlert {
+        padding: 0.4rem 0.6rem !important;
+        margin-bottom: 0.4rem !important;
+    }
+    h1, h2, h3, h4 {
+        margin-top: 0.2rem !important;
+        margin-bottom: 0.2rem !important;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 if "page" not in st.session_state:
     st.session_state.page = "landing"
 if "geometry" not in st.session_state:
@@ -375,15 +413,15 @@ def render_two_mirror_results():
         fig_response.update_yaxes(title_text="rad", row=2, col=1, fixedrange=True)
         fig_response.update_yaxes(title_text="s", row=2, col=2, fixedrange=True)
         fig_response.update_layout(
-            height=650,
+            height=520,
             dragmode="zoom",
             showlegend=False,
-            margin=dict(l=35, r=20, t=65, b=35),
+            margin=dict(l=35, r=20, t=40, b=30),
+            font=dict(family="DejaVu Sans"),
         )
         st.plotly_chart(fig_response, use_container_width=True)
 
     with info_col:
-        st.markdown("### Cavity properties")
         st.metric("FSR", f"{props['FSR']/1e6:.3f} MHz")
         st.metric("Linewidth (FWHM)", f"{props['linewidth_fwhm']/1e3:.3f} kHz")
         st.metric("Finesse", f"{props['finesse']:.1f}")
@@ -391,6 +429,15 @@ def render_two_mirror_results():
             st.metric("Transverse spacing", f"{props['tm_spacing']/1e6:.3f} MHz")
         else:
             st.metric("Transverse spacing", "—")
+
+        if 0.0 < L < Rc:
+            zR = float(np.sqrt(L * (Rc - L)))
+            w0 = float(np.sqrt(lambda0 * zR / np.pi))
+            st.markdown(
+                f"**w₀ = {w0*1e6:.2f} µm**, **z_R = {zR*1e3:.2f} mm**"
+            )
+        else:
+            st.markdown("**w₀ = —**, **z_R = —**")
 
         if props["is_stable"]:
             st.success("Stable: 0 < g₁·g₂ < 1")
@@ -405,10 +452,6 @@ def render_two_mirror_results():
                 st.warning(f"HOM spacing / linewidth = {ratio:.2f} (< 5)")
         else:
             st.warning("HOM spacing check unavailable.")
-
-        diagram_path = "twomirrorcavity.jpg"
-        if os.path.exists(diagram_path):
-            st.image(diagram_path, use_container_width=True)
 
     with st.expander("Derivations and definitions", expanded=False):
         st.subheader("Derivations and definitions")
