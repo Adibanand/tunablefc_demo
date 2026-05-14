@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 
 import numpy as np
 import plotly.graph_objects as go
@@ -13,6 +14,13 @@ from plotly.subplots import make_subplots
 c = 3e8
 lambda0 = 1063.999e-9
 f0 = c / lambda0
+
+# Project images live under assets/images (repo root = this file's parent)
+_ASSETS_IMAGES = Path(__file__).resolve().parent / "assets" / "images"
+
+
+def _asset_image(filename: str) -> str:
+    return str(_ASSETS_IMAGES / filename)
 
 
 # --------------------------------------------------------------------
@@ -259,18 +267,24 @@ def etalon_coeffs(r1, r2, t1, t2, k_val, n_substrate, d):
     exp_i_delta = np.exp(1j * delta)
     denom = 1.0 - r1 * r2 * exp_i_delta
     t_et = t1 * t2 * np.exp(1j * delta / 2.0) / denom
-    r_et_L = -r1 + (t1**2 * r2 * exp_i_delta) / denom
+    r_et_L = r1 + (t1**2 * r2 * exp_i_delta) / denom
     r_et_R = r2 + (t2**2 * r1 * exp_i_delta) / denom
     return t_et, r_et_L, r_et_R
 
 
-def three_surface_response(freqs, R1, R2, R3, L1, L2, n_substrate):
+def three_surface_response(freqs, R1, R2, R3, L1, L2, n_substrate, eps_loss):
     """
     Field-level reflection and transmission of an etalon (R1, R2, n, L1) +
     long cavity (L2) + concave end mirror (R3).
+
+    Round-trip loss ε on the L₂ leg is included the same way as the two-mirror
+    model: amplitude survival per round trip a = √(1−ε), one √(a) factor on a
+    single pass through the cavity for transmission.
     """
     r1, r2, r3 = np.sqrt(R1), np.sqrt(R2), np.sqrt(R3)
     t1, t2, t3 = np.sqrt(1.0 - R1), np.sqrt(1.0 - R2), np.sqrt(1.0 - R3)
+    eps_c = float(np.clip(eps_loss, 0.0, 1.0 - 1e-12))
+    a = np.sqrt(1.0 - eps_c)
 
     k_vals = 2.0 * np.pi * freqs / c
     theta = 2.0 * k_vals * L2
@@ -279,9 +293,9 @@ def three_surface_response(freqs, R1, R2, R3, L1, L2, n_substrate):
         r1, r2, t1, t2, k_vals, n_substrate, L1
     )
 
-    denom = 1.0 - r_et_R * r3 * np.exp(1j * theta)
-    r_tot = r_et_L + (t_et**2 * r3 * np.exp(1j * theta)) / denom
-    t_tot = (t_et * t3 * np.exp(1j * k_vals * L2)) / denom
+    denom = 1.0 - r_et_R * r3 * a * np.exp(1j * theta)
+    r_tot = r_et_L + (t_et**2 * r3 * a * np.exp(1j * theta)) / denom
+    t_tot = (t_et * t3 * np.sqrt(a) * np.exp(1j * k_vals * L2)) / denom
     return r_tot, t_tot
 
 
@@ -364,10 +378,12 @@ def etalon_properties(
     }
 
 
-def three_surface_length_scan(L_scan, R1, R2, R3, L1, n_substrate):
+def three_surface_length_scan(L_scan, R1, R2, R3, L1, n_substrate, eps_loss):
     """Reflection and transmission with the long cavity length swept at f0."""
     r1, r2, r3 = np.sqrt(R1), np.sqrt(R2), np.sqrt(R3)
     t1, t2, t3 = np.sqrt(1.0 - R1), np.sqrt(1.0 - R2), np.sqrt(1.0 - R3)
+    eps_c = float(np.clip(eps_loss, 0.0, 1.0 - 1e-12))
+    a = np.sqrt(1.0 - eps_c)
 
     k0 = 2.0 * np.pi * f0 / c
     delta = 2.0 * k0 * n_substrate * L1
@@ -378,9 +394,9 @@ def three_surface_length_scan(L_scan, R1, R2, R3, L1, n_substrate):
     r_et_R = r2 + (t2**2 * r1 * exp_i_delta) / denom_et
 
     theta = 2.0 * k0 * L_scan
-    denom_arr = 1.0 - r_et_R * r3 * np.exp(1j * theta)
-    r_tot = r_et_L + (t_et**2 * r3 * np.exp(1j * theta)) / denom_arr
-    t_tot = (t_et * t3 * np.exp(1j * k0 * L_scan)) / denom_arr
+    denom_arr = 1.0 - r_et_R * r3 * a * np.exp(1j * theta)
+    r_tot = r_et_L + (t_et**2 * r3 * a * np.exp(1j * theta)) / denom_arr
+    t_tot = (t_et * t3 * np.sqrt(a) * np.exp(1j * k0 * L_scan)) / denom_arr
     return r_tot, t_tot
 
 
@@ -426,7 +442,7 @@ def render_two_mirror_params():
     col_diag, col_input = st.columns([1, 1])
 
     with col_diag:
-        diagram_path = "twomirrorcavity.jpg"
+        diagram_path = _asset_image("twomirrorcavity.jpg")
         if os.path.exists(diagram_path):
             st.image(diagram_path, caption="Plano–concave two-mirror cavity")
         else:
@@ -782,7 +798,7 @@ def render_etalon_params():
     col_diag, col_input = st.columns([1, 1])
 
     with col_diag:
-        diagram_path = "etalonmirrorcavity.jpg"
+        diagram_path = _asset_image("etalonmirrorcavity.jpg")
         if os.path.exists(diagram_path):
             st.image(diagram_path, caption="Etalon + concave end-mirror cavity")
         else:
@@ -1067,7 +1083,7 @@ def render_etalon_results():
         L1_T = L1 + dL1_dT_geom * dT
         n_T = n_substrate + dn_dT_val * dT
         r_tot_T, t_tot_T = three_surface_response(
-            freqs, R1, R2, R3, L1_T, L2, n_T
+            freqs, R1, R2, R3, L1_T, L2, n_T, eps
         )
         T_T = np.abs(t_tot_T) ** 2
         R_T = np.abs(r_tot_T) ** 2
@@ -1082,7 +1098,7 @@ def render_etalon_results():
         L1_T = L1 + dL1_dT_geom * dT
         n_T = n_substrate + dn_dT_val * dT
         r_lenscan_T, t_lenscan_T = three_surface_length_scan(
-            L_scan, R1, R2, R3, L1_T, n_T
+            L_scan, R1, R2, R3, L1_T, n_T, eps
         )
         T_lenscan_T = np.abs(t_lenscan_T) ** 2
         R_lenscan_T = np.abs(r_lenscan_T) ** 2
@@ -1256,14 +1272,19 @@ r_{\mathrm{et,L}} = r_1 + \frac{t_1^2 r_2 e^{i\delta}}{1 - r_1 r_2 e^{i\delta}},
 r_{\mathrm{et,R}} = r_2 + \frac{t_2^2 r_1 e^{i\delta}}{1 - r_1 r_2 e^{i\delta}}
 """
         )
+        st.markdown(
+            "Round-trip loss ε on the L₂ cavity is modeled as an amplitude "
+            "survival factor \\(a = \\sqrt{1-\\epsilon}\\) per round trip "
+            "(same convention as the two-mirror model)."
+        )
         st.latex(
             r"""
-r_{\mathrm{tot}}(f) = r_{\mathrm{et,L}} + \frac{t_{\mathrm{et}}^2 r_3 e^{i\theta}}{1 - r_{\mathrm{et,R}} r_3 e^{i\theta}}
+r_{\mathrm{tot}}(f) = r_{\mathrm{et,L}} + \frac{t_{\mathrm{et}}^2 r_3\, a\, e^{i\theta}}{1 - r_{\mathrm{et,R}} r_3\, a\, e^{i\theta}}
 """
         )
         st.latex(
             r"""
-t_{\mathrm{tot}}(f) = \frac{t_{\mathrm{et}} t_3 e^{i k L_2}}{1 - r_{\mathrm{et,R}} r_3 e^{i\theta}}
+t_{\mathrm{tot}}(f) = \frac{t_{\mathrm{et}} t_3 \sqrt{a}\, e^{i k L_2}}{1 - r_{\mathrm{et,R}} r_3\, a\, e^{i\theta}}
 """
         )
 
