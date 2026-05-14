@@ -20,6 +20,8 @@ From this directory:
 streamlit run app_v2.py
 ```
 
+or open in browser: https://tunablefcdemo.streamlit.app/
+
 ## Requirements
 
 See `requirements.txt`.
